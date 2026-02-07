@@ -39,7 +39,7 @@ git clone https://github.com/edersouzamelo/nemosine-10-MiND.git
 cd nemosine-10-MiND
 pip install -r src/backend/requirements.txt
 python src/backend/main.py
-
+'''
 
 ---
 
