@@ -4,7 +4,7 @@
 
 MiND is a lightweight, API-agnostic middleware designed to mediate interactions between users and large language models (LLMs). It provides a deterministic orchestration layer that enables structured preprocessing, routing, and logging of prompts and responses without modifying the underlying models.
 
-The name **MiND** originally refers to *Minimal Nemosinian Design*. In the context of this repository and its associated software publication, MiND is used to denote a **Minimal Deterministic Middleware** for auditable LLM interaction. This naming reflects the architectural role of the system while remaining consistent with its origin as an extracted core from the broader Nemosine framework.
+The name **MiND** originally refers to *Minimal Nemosine Design*. In the context of this repository and its associated software publication, MiND is used to denote a **Minimal Deterministic Middleware** for auditable LLM interaction. This naming reflects the architectural role of the system while remaining consistent with its origin as an extracted core from the broader Nemosine framework.
 
 
 ---
