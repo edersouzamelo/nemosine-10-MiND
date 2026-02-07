@@ -28,6 +28,21 @@ MiND does not implement fine-tuning, RLHF, model alignment techniques, or intern
 
 ---
 
+## Minimal Execution
+
+MiND is designed as a minimal deterministic middleware and does not require a full application stack to be executed.
+
+To perform a minimal execution check, clone the repository, install dependencies, and run the backend entry point:
+
+```bash
+git clone https://github.com/edersouzamelo/nemosine-10-MiND.git
+cd nemosine-10-MiND
+pip install -r src/backend/requirements.txt
+python src/backend/main.py
+
+
+---
+
 ## Design Principles
 
 MiND is built around the following core principles:
