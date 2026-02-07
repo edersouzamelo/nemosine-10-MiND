@@ -1,18 +1,18 @@
----  
-title: "MiND: A Minimal Deterministic Middleware for Auditable LLM Interaction"  
-tags:  
-  - large language models  
-  - middleware  
-  - reproducibility  
-  - auditability  
-authors:  
-  - name: Edervaldo José de Souza Melo  
-    affiliation: 1  
-affiliations:  
-  - name: Independent Researcher, Brazil  
-    index: 1  
-date: 2026-02-xx  
-bibliography: paper.bib  
+---
+title: "MiND: A Minimal Deterministic Middleware for Auditable LLM Interaction"
+tags:
+  - large language models
+  - middleware
+  - auditability
+  - reproducibility
+authors:
+  - name: Edervaldo José de Souza Melo
+    affiliation: 1
+affiliations:
+  - name: Independent Researcher
+    index: 1
+date: 2026-02-07
+bibliography: paper.bib
 ---
 
 ## Summary
