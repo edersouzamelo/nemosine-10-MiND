@@ -20,6 +20,10 @@ Large Language Models (LLMs) are increasingly integrated into workflows involvin
 
 MiND addresses these limitations by introducing a deterministic middleware layer positioned between users and LLMs. Instead of forwarding raw user inputs directly to a model, MiND performs structured preprocessing, routing, and logging of interactions before and after each model invocation.
 
+MiND is explicitly non-agentic. It does not perform autonomous planning, goal formulation, multi-step reasoning, tool orchestration, or adaptive control. The middleware operates strictly as a deterministic and externally controlled interaction layer.
+
+MiND does not implement fine-tuning, RLHF, model alignment techniques, or internal model modification. Any agent-like behavior, if desired, must be implemented externally and remains out of scope for this software.
+
 ---
 
 ## Design Principles
