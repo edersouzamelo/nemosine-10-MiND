@@ -1,25 +1,23 @@
-\---  
+---  
 title: "MiND: A Minimal Deterministic Middleware for Auditable LLM Interaction"  
 tags:  
-  \- large language models  
-  \- middleware  
-  \- reproducibility  
-  \- auditability  
+  - large language models  
+  - middleware  
+  - reproducibility  
+  - auditability  
 authors:  
-  \- name: Edervaldo José de Souza Melo  
+  - name: Edervaldo José de Souza Melo  
     affiliation: 1  
 affiliations:  
-  \- name: Independent Researcher, Brazil  
+  - name: Independent Researcher, Brazil  
     index: 1  
 date: 2026-02-xx  
 bibliography: paper.bib  
-\---
+---
 
-\#\# Summary
+## Summary
 
 MiND is a lightweight, API-agnostic middleware designed to mediate interactions between users and large language models (LLMs). It provides a deterministic orchestration layer that enables structured preprocessing, routing, and logging of prompts and responses without modifying the underlying models. By externalizing interaction state and control logic, MiND supports auditable usage, reduced data exposure, and portability of user interaction histories across different LLM providers. The framework is intended for developers and researchers who require controlled, inspectable, and reproducible LLM interaction pipelines beyond direct prompt-to-API usage.
-
-\#\# Statement of Need
 
 ## Statement of Need
 
@@ -37,4 +35,4 @@ For example, in privacy-sensitive workflows, MiND can be configured to log inter
 
 MiND is designed as API-agnostic middleware and does not claim to infer causal mechanisms within LLMs. Its contribution lies in providing developers and researchers with a lightweight, reusable infrastructure for controlled, inspectable, and portable LLM interaction pipelines, addressing practical limitations of current prompt-centric usage patterns.
 
-\#\# References  
+## References  
