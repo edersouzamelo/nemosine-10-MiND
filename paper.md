@@ -39,8 +39,6 @@ MiND is designed as API-agnostic middleware and does not claim to infer causal m
 
 The references below provide minimal contextual grounding for the architectural assumptions underlying MiND, without implying dependency on specific learning, fine-tuning, or agent-based paradigms.
 
-## References  
-
 ## Software Availability
 
 - **Name:** MiND (Minimal Deterministic Middleware for Auditable LLM Interaction)
@@ -48,3 +46,4 @@ The references below provide minimal contextual grounding for the architectural 
 - **License:** GNU General Public License v3.0 (GPL-3.0)
 - **Version:** main branch (snapshot at submission time)
 
+## References  
