@@ -30,16 +30,7 @@ MiND does not implement fine-tuning, RLHF, model alignment techniques, or intern
 
 ## Minimal Execution
 
-MiND is designed as a minimal deterministic middleware and does not require a full application stack to be executed.
-
-To perform a minimal execution check, clone the repository, install dependencies, and run the backend entry point:
-
-```bash
-git clone https://github.com/edersouzamelo/nemosine-10-MiND.git
-cd nemosine-10-MiND
-pip install -r src/backend/requirements.txt
-python src/backend/main.py
-'''
+MiND is intentionally designed as a minimal deterministic middleware. A minimal execution consists of cloning the repository, installing the backend dependencies listed in src/backend/requirements.txt, and running the backend entry point located in src/backend/main.py. This execution initializes the deterministic orchestration flow and validates the middleware structure. Full interaction with external LLM providers may require a valid API key configured as an environment variable, depending on the selected backend, and is not required for this minimal execution check.
 
 ---
 
