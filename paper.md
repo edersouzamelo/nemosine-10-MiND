@@ -17,7 +17,7 @@ bibliography: paper.bib
 
 ## Summary
 
-MiND is a lightweight, API-agnostic middleware designed to mediate interactions between users and large language models (LLMs). It provides a deterministic orchestration layer that enables structured preprocessing, routing, and logging of prompts and responses without modifying the underlying models. By externalizing interaction state and control logic, MiND supports auditable usage, reduced data exposure, and portability of user interaction histories across different LLM providers. The framework is intended for developers and researchers who require controlled, inspectable, and reproducible LLM interaction pipelines beyond direct prompt-to-API usage.
+MiND is a lightweight, API-agnostic middleware designed to mediate interactions between users and large language models (LLMs). It provides a deterministic orchestration layer that enables structured preprocessing, routing, and logging of prompts and responses without modifying the underlying models. MiND is explicitly non-agentic: it does not perform autonomous planning, goal formulation, tool invocation, or adaptive control. By externalizing interaction state and control logic, MiND supports auditable usage, reduced data exposure, and portability of user interaction histories across different LLM providers. The framework is intended for developers and researchers who require controlled, inspectable, and reproducible LLM interaction pipelines beyond direct prompt-to-API usage.
 
 ## Statement of Need
 
