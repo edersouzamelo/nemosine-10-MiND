@@ -35,4 +35,6 @@ For example, in privacy-sensitive workflows, MiND can be configured to log inter
 
 MiND is designed as API-agnostic middleware and does not claim to infer causal mechanisms within LLMs. Its contribution lies in providing developers and researchers with a lightweight, reusable infrastructure for controlled, inspectable, and portable LLM interaction pipelines, addressing practical limitations of current prompt-centric usage patterns.
 
+The references below provide minimal contextual grounding for the architectural assumptions underlying MiND, without implying dependency on specific learning, fine-tuning, or agent-based paradigms.
+
 ## References  
