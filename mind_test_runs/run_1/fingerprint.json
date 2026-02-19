@@ -1,0 +1,10 @@
+{
+  "run_id": "run_1",
+  "returncode": 1,
+  "stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha": "9808b8a2bd8a79c8253d6564bf89d7277e473230106282a25e3084ed8a88e16a",
+  "output_exists": false,
+  "events_exists": false,
+  "output_sha": null,
+  "events_sha": null
+}

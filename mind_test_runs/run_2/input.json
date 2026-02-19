@@ -1,0 +1,7 @@
+{
+  "input": "teste deterministico: mesma entrada, mesmo resultado",
+  "meta": {
+    "case": "determinism_min",
+    "v": 1
+  }
+}
