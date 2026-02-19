@@ -34,12 +34,6 @@ MiND can be installed directly via pip from the public repository: python -m pip
 
 ---
 
-## Minimal Execution
-
-MiND is intentionally designed as a minimal deterministic middleware. A minimal execution consists of cloning the repository, installing the backend dependencies listed in src/backend/requirements.txt, and running the backend entry point located in src/backend/main.py. This execution initializes the deterministic orchestration flow and validates the middleware structure. Full interaction with external LLM providers may require a valid API key configured as an environment variable, depending on the selected backend, and is not required for this minimal execution check.
-
----
-
 ## Design Principles
 
 MiND is built around the following core principles:
