@@ -28,6 +28,12 @@ MiND does not implement fine-tuning, RLHF, model alignment techniques, or intern
 
 ---
 
+## Installation and Minimal Test
+
+MiND can be installed directly via pip from the public repository: python -m pip install git+https://github.com/edersouzamelo/nemosine-10-MiND.git. After installation, run python -m nemosine_mind to start the deterministic middleware server. By default, the API will be available at http://127.0.0.1:8000/docs, providing an interactive Swagger UI for testing. No API key is required for minimal execution validation. To perform a quick functional test, use the /chat endpoint in the Swagger interface with a JSON body such as { "text": "hello" }. The server will return a structured JSON response including a deterministic reply and a cycle_id, confirming successful installation and execution.
+
+---
+
 ## Minimal Execution
 
 MiND is intentionally designed as a minimal deterministic middleware. A minimal execution consists of cloning the repository, installing the backend dependencies listed in src/backend/requirements.txt, and running the backend entry point located in src/backend/main.py. This execution initializes the deterministic orchestration flow and validates the middleware structure. Full interaction with external LLM providers may require a valid API key configured as an environment variable, depending on the selected backend, and is not required for this minimal execution check.
