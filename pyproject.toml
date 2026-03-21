@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nemosine-mind"
-version = "1.0.1"
+version = "1.0.2"
 description = "MiND: A Minimal Deterministic Middleware for Auditing, Reproducing, and Logging Large Language Model Interactions in Research Workflows."
 readme = "README.md"
 requires-python = ">=3.9"
