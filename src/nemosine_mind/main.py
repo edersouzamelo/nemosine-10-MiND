@@ -6,9 +6,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from . import __version__
-from .ame.config import AMEConfig
-from .ame.motor_openai import OpenAIMotor
-from .ame.registry import JsonlRegistry
+from .core.config import MindConfig
+from .core.orchestrator import TextGenerator
+from .core.registry import JsonlRegistry
 from .runtime import MindRuntime, build_runtime
 
 class Message(BaseModel):
@@ -18,8 +18,8 @@ class Message(BaseModel):
 def create_app(
     *,
     runtime: Optional[MindRuntime] = None,
-    config: Optional[AMEConfig] = None,
-    motor: Optional[OpenAIMotor] = None,
+    config: Optional[MindConfig] = None,
+    motor: Optional[TextGenerator] = None,
     registry: Optional[JsonlRegistry] = None,
 ) -> FastAPI:
     """Build the HTTP adapter around an explicitly replaceable core runtime."""

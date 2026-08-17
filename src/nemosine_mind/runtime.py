@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .ame.config import AMEConfig, load_config
 from .ame.motor_openai import OpenAIMotor
-from .ame.orchestrator import Orchestrator
-from .ame.registry import JsonlRegistry
+from .core.config import MindConfig, load_config
+from .core.orchestrator import Orchestrator, TextGenerator
+from .core.registry import JsonlRegistry
 
 
 def default_registry_path() -> str:
@@ -32,16 +32,16 @@ def default_registry_path() -> str:
 class MindRuntime:
     """Runtime dependencies shared by the Python core and transport adapters."""
 
-    config: AMEConfig
-    motor: OpenAIMotor
+    config: MindConfig
+    motor: TextGenerator
     registry: JsonlRegistry
     orchestrator: Orchestrator
 
 
 def build_runtime(
     *,
-    config: Optional[AMEConfig] = None,
-    motor: Optional[OpenAIMotor] = None,
+    config: Optional[MindConfig] = None,
+    motor: Optional[TextGenerator] = None,
     registry: Optional[JsonlRegistry] = None,
 ) -> MindRuntime:
     active_config = config or load_config()

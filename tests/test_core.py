@@ -4,9 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from nemosine_mind import __version__
-from nemosine_mind.ame.config import AMEConfig
-from nemosine_mind.ame.orchestrator import Orchestrator
-from nemosine_mind.ame.registry import JsonlRegistry
+from nemosine_mind.core.config import MindConfig
+from nemosine_mind.core.orchestrator import Orchestrator
+from nemosine_mind.core.registry import JsonlRegistry
 from nemosine_mind.main import create_app
 from nemosine_mind.runtime import build_runtime, default_registry_path
 
@@ -28,7 +28,7 @@ class StubMotor:
 def test_http_app_uses_injected_dependencies(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     app = create_app(
-        config=AMEConfig(),
+        config=MindConfig(),
         motor=StubMotor(),
         registry=registry,
     )
@@ -48,7 +48,7 @@ def test_http_app_uses_injected_dependencies(tmp_path):
 def test_failed_provider_call_is_auditable(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     orchestrator = Orchestrator(
-        config=AMEConfig(),
+        config=MindConfig(),
         motor=StubMotor(error=RuntimeError("provider unavailable")),
         registry=registry,
     )
@@ -68,7 +68,7 @@ def test_failed_provider_call_is_auditable(tmp_path):
 def test_http_failure_is_auditable_without_exposing_provider_error(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     app = create_app(
-        config=AMEConfig(),
+        config=MindConfig(),
         motor=StubMotor(error=RuntimeError("secret provider detail")),
         registry=registry,
     )
@@ -86,7 +86,7 @@ def test_http_failure_is_auditable_without_exposing_provider_error(tmp_path):
 def test_registry_writes_valid_jsonl(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "nested" / "cycles.jsonl"))
     orchestrator = Orchestrator(
-        config=AMEConfig(),
+        config=MindConfig(),
         motor=StubMotor(),
         registry=registry,
     )
@@ -102,7 +102,7 @@ def test_registry_writes_valid_jsonl(tmp_path):
 def test_runtime_is_independent_from_http_adapter(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     runtime = build_runtime(
-        config=AMEConfig(),
+        config=MindConfig(),
         motor=StubMotor(reply="core reply"),
         registry=registry,
     )
@@ -117,3 +117,21 @@ def test_registry_path_respects_configured_data_directory(tmp_path, monkeypatch)
     monkeypatch.setenv("MIND_DATA_DIR", str(tmp_path))
 
     assert default_registry_path() == str(tmp_path / "cycles.jsonl")
+
+
+def test_default_core_configuration_is_nemosine_neutral():
+    config = MindConfig()
+
+    assert config.mode == "mind"
+    assert "Nemosine" not in config.system_template
+    assert "AME" not in config.system_template
+
+
+def test_legacy_ame_imports_remain_compatible():
+    from nemosine_mind.ame.config import AMEConfig
+    from nemosine_mind.ame.orchestrator import Orchestrator as LegacyOrchestrator
+    from nemosine_mind.ame.registry import JsonlRegistry as LegacyRegistry
+
+    assert AMEConfig().mode == "AME"
+    assert LegacyOrchestrator is Orchestrator
+    assert LegacyRegistry is JsonlRegistry
