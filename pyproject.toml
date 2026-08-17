@@ -42,6 +42,12 @@ dependencies = [
   "openai>=1.40"
 ]
 
+[project.optional-dependencies]
+test = [
+  "httpx>=0.27",
+  "pytest>=8.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/edersouzamelo/nemosine-10-MiND"
 Repository = "https://github.com/edersouzamelo/nemosine-10-MiND"
@@ -54,3 +60,6 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["nemosine_mind*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
