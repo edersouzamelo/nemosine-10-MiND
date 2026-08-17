@@ -208,3 +208,5 @@ __marimo__/
 .venv_mind_test/
 .venv_test/
 
+# MiND runtime data
+cycles.jsonl
