@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .models import AMECycleRecord
@@ -15,16 +16,20 @@ class JsonlRegistry:
     """
 
     def __init__(self, path: str):
-        self.path = path
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        self.path = str(Path(path).expanduser())
 
     def append(self, record: AMECycleRecord) -> None:
+        parent = os.path.dirname(self.path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
         line = json.dumps({
             "cycle_id": record.cycle_id,
             "input": record.input,
             "config": record.config,
             "output": record.output,
             "meta": record.meta,
+            "status": record.status,
+            "error": record.error,
         }, ensure_ascii=False)
         with open(self.path, "a", encoding="utf-8") as f:
             f.write(line + "\n")
@@ -38,5 +43,5 @@ class JsonlRegistry:
             if not lines:
                 return None
             return json.loads(lines[-1])
-        except Exception:
-            return None
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"Could not read cycle registry: {self.path}") from exc
