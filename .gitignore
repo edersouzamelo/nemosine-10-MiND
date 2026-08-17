@@ -210,3 +210,4 @@ __marimo__/
 
 # MiND runtime data
 cycles.jsonl
+src/nemosine_mind/runtime/
