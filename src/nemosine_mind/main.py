@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from . import __version__
 from .core.config import MindConfig
-from .core.registry import JsonlRegistry
+from .core.registry import CycleStore
 from .providers.base import Provider
 from .runtime import MindRuntime, build_runtime
 
@@ -21,7 +21,7 @@ def create_app(
     config: Optional[MindConfig] = None,
     provider: Optional[Provider] = None,
     motor: Optional[Provider] = None,
-    registry: Optional[JsonlRegistry] = None,
+    registry: Optional[CycleStore] = None,
 ) -> FastAPI:
     """Build the HTTP adapter around an explicitly replaceable core runtime."""
     if runtime is not None and any(
@@ -52,6 +52,21 @@ def create_app(
     @application.get("/ame/last")
     def last_cycle():
         return {"last": active_runtime.registry.read_last()}
+
+    @application.get("/cycles")
+    def list_cycles(limit: int = 50, offset: int = 0):
+        try:
+            cycles = active_runtime.registry.list(limit=limit, offset=offset)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"cycles": cycles, "limit": limit, "offset": offset}
+
+    @application.get("/cycles/{cycle_id}")
+    def get_cycle(cycle_id: str):
+        artifact = active_runtime.registry.get(cycle_id)
+        if artifact is None:
+            raise HTTPException(status_code=404, detail="Cycle not found")
+        return artifact
 
     @application.post("/chat")
     def chat(message: Message):

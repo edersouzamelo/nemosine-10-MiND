@@ -6,8 +6,8 @@ from typing import Dict, List
 
 from .config import MindConfig
 from .input_handler import InputHandler
-from .models import CycleRecord, MindOutput, RunResult
-from .registry import JsonlRegistry
+from .models import CycleArtifact, MindOutput, RunResult, utc_now
+from .registry import CycleStore
 from nemosine_mind.providers.base import Provider, ProviderError, ProviderResult
 
 TextGenerator = Provider
@@ -20,7 +20,7 @@ class Orchestrator:
         self,
         config: MindConfig,
         provider: Provider,
-        registry: JsonlRegistry,
+        registry: CycleStore,
     ):
         self.config = config
         self.provider = provider
@@ -33,7 +33,8 @@ class Orchestrator:
         ]
 
     def run(self, user_text: str) -> RunResult:
-        start = time.time()
+        start_ns = time.monotonic_ns()
+        created_at = utc_now()
         inp = InputHandler.parse(user_text)
         if not inp.text:
             raise ValueError("Empty input after normalization")
@@ -48,16 +49,16 @@ class Orchestrator:
                 max_output_tokens=self.config.max_output_tokens,
             )
         except Exception as exc:
-            self.registry.append(CycleRecord(
+            self.registry.append(CycleArtifact(
                 cycle_id=cycle_id,
+                status="failed",
+                created_at=created_at,
+                completed_at=utc_now(),
+                duration_ms=(time.monotonic_ns() - start_ns) // 1_000_000,
                 input={"text": inp.text},
                 config=self.config.to_public_dict(),
+                provider={"name": self.provider.name, "model": self.provider.model},
                 output={},
-                meta={
-                    "ts": int(time.time()),
-                    "latency_ms": int((time.time() - start) * 1000),
-                },
-                status="failed",
                 error=(
                     {
                         "type": type(exc).__name__,
@@ -79,21 +80,21 @@ class Orchestrator:
         if isinstance(provider_result, str):
             provider_result = ProviderResult(text=provider_result)
         out = MindOutput(text=provider_result.text)
-        self.registry.append(CycleRecord(
+        self.registry.append(CycleArtifact(
             cycle_id=cycle_id,
+            status="succeeded",
+            created_at=created_at,
+            completed_at=utc_now(),
+            duration_ms=(time.monotonic_ns() - start_ns) // 1_000_000,
             input={"text": inp.text},
             config=self.config.to_public_dict(),
-            output={"text": out.text},
-            meta={
-                "ts": int(time.time()),
-                "latency_ms": int((time.time() - start) * 1000),
-                "provider": {
-                    "name": self.provider.name,
-                    "model": self.provider.model,
-                    "request_id": provider_result.request_id,
-                    "finish_reason": provider_result.finish_reason,
-                    "usage": provider_result.usage,
-                },
+            provider={
+                "name": self.provider.name,
+                "model": self.provider.model,
+                "request_id": provider_result.request_id,
+                "finish_reason": provider_result.finish_reason,
+                "usage": provider_result.usage,
             },
+            output={"text": out.text},
         ))
         return RunResult(cycle_id=cycle_id, reply=out.text)

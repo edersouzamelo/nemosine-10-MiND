@@ -1,12 +1,15 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from fastapi.testclient import TestClient
 
 from nemosine_mind import __version__
 from nemosine_mind.core.config import MindConfig
+from nemosine_mind.core.models import CYCLE_SCHEMA_VERSION, CycleArtifact
 from nemosine_mind.core.orchestrator import Orchestrator
 from nemosine_mind.core.registry import JsonlRegistry
+from nemosine_mind.core.sqlite_registry import SQLiteRegistry
 from nemosine_mind.main import create_app
 from nemosine_mind.runtime import build_runtime, default_registry_path
 from nemosine_mind.providers.anthropic import AnthropicProvider
@@ -289,7 +292,7 @@ def test_provider_metadata_is_written_to_cycle(tmp_path):
 
     orchestrator.run("hello")
 
-    assert registry.read_last()["meta"]["provider"] == {
+    assert registry.read_last()["provider"] == {
         "name": "stub",
         "model": "stub-1",
         "request_id": "request-123",
@@ -337,3 +340,121 @@ def test_unconfigured_real_provider_has_normalized_error(provider, key_code):
         )
 
     assert captured.value.code == key_code
+
+
+def make_artifact(cycle_id, created_at="2026-08-17T12:00:00.000Z"):
+    return CycleArtifact(
+        cycle_id=cycle_id,
+        status="succeeded",
+        created_at=created_at,
+        completed_at=created_at,
+        duration_ms=1,
+        input={"text": cycle_id},
+        config={},
+        provider={"name": "mock", "model": "mind-mock-1"},
+        output={"text": "reply"},
+    )
+
+
+def test_cycle_artifact_v1_is_written_with_utc_timestamps(tmp_path):
+    registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
+    result = Orchestrator(
+        config=MindConfig(), provider=StubProvider(), registry=registry
+    ).run("hello")
+
+    artifact = registry.get(result.cycle_id)
+
+    assert artifact["schema_version"] == CYCLE_SCHEMA_VERSION
+    assert artifact["created_at"].endswith("Z")
+    assert artifact["completed_at"].endswith("Z")
+    assert artifact["duration_ms"] >= 0
+    assert "meta" not in artifact
+
+
+def test_jsonl_reads_legacy_records_and_marks_them_as_legacy(tmp_path):
+    path = tmp_path / "cycles.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "cycle_id": "legacy-1",
+                "input": {"text": "old"},
+                "config": {},
+                "output": {"text": "reply"},
+                "meta": {"ts": 1, "latency_ms": 12},
+                "status": "succeeded",
+                "error": None,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    artifact = JsonlRegistry(str(path)).get("legacy-1")
+
+    assert artifact["schema_version"] == "mind.cycle/legacy"
+    assert artifact["duration_ms"] == 12
+    assert artifact["extensions"]["legacy_meta"]["ts"] == 1
+
+
+def test_jsonl_ignores_only_an_incomplete_final_line(tmp_path):
+    path = tmp_path / "cycles.jsonl"
+    registry = JsonlRegistry(str(path))
+    registry.append(make_artifact("complete"))
+    with path.open("a", encoding="utf-8") as file:
+        file.write('{"cycle_id":"partial"')
+
+    assert [item["cycle_id"] for item in registry.list()] == ["complete"]
+
+
+@pytest.mark.parametrize("store_type", [JsonlRegistry, SQLiteRegistry])
+def test_cycle_stores_support_get_and_paginated_history(tmp_path, store_type):
+    suffix = "jsonl" if store_type is JsonlRegistry else "sqlite3"
+    store = store_type(str(tmp_path / f"cycles.{suffix}"))
+    store.append(make_artifact("one", "2026-08-17T12:00:00.000Z"))
+    store.append(make_artifact("two", "2026-08-17T12:00:01.000Z"))
+    store.append(make_artifact("three", "2026-08-17T12:00:02.000Z"))
+
+    assert store.get("two")["input"] == {"text": "two"}
+    assert [item["cycle_id"] for item in store.list(limit=2)] == ["three", "two"]
+    assert [item["cycle_id"] for item in store.list(limit=1, offset=2)] == ["one"]
+    assert store.get("missing") is None
+
+
+@pytest.mark.parametrize("store_type", [JsonlRegistry, SQLiteRegistry])
+def test_cycle_stores_accept_concurrent_appends(tmp_path, store_type):
+    suffix = "jsonl" if store_type is JsonlRegistry else "sqlite3"
+    store = store_type(str(tmp_path / f"concurrent.{suffix}"))
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        list(executor.map(lambda number: store.append(make_artifact(str(number))), range(12)))
+
+    assert len(store.list(limit=50)) == 12
+
+
+def test_http_exposes_cycle_history_and_cycle_by_id(tmp_path):
+    registry = SQLiteRegistry(str(tmp_path / "cycles.sqlite3"))
+    client = TestClient(
+        create_app(
+            config=MindConfig(), provider=StubProvider(), registry=registry
+        )
+    )
+    created = client.post("/chat", json={"text": "hello"}).json()
+
+    detail = client.get(f"/cycles/{created['cycle_id']}")
+    history = client.get("/cycles?limit=1&offset=0")
+
+    assert detail.status_code == 200
+    assert detail.json()["schema_version"] == CYCLE_SCHEMA_VERSION
+    assert history.status_code == 200
+    assert history.json()["cycles"][0]["cycle_id"] == created["cycle_id"]
+    assert client.get("/cycles/missing").status_code == 404
+
+
+def test_runtime_selects_sqlite_storage(tmp_path, monkeypatch):
+    monkeypatch.setenv("MIND_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("MIND_STORAGE", "sqlite")
+
+    runtime = build_runtime(config=MindConfig(), provider=StubProvider())
+
+    assert isinstance(runtime.registry, SQLiteRegistry)
+    assert runtime.registry.path == str(tmp_path / "cycles.sqlite3")
