@@ -73,3 +73,18 @@ class JsonlRegistry:
     def read_last(self) -> Optional[Dict[str, Any]]:
         records = self.list(limit=1)
         return records[0] if records else None
+
+
+def migrate_cycles(source: CycleStore, target: CycleStore) -> int:
+    """Copy all readable artifacts between stores, preserving their schema identity."""
+    offset = 0
+    records: List[Dict[str, Any]] = []
+    while True:
+        page = source.list(limit=200, offset=offset)
+        if not page:
+            break
+        records.extend(page)
+        offset += len(page)
+    for value in reversed(records):
+        target.append(CycleArtifact.from_dict(value))
+    return len(records)

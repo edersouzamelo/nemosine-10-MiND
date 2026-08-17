@@ -8,7 +8,7 @@ from nemosine_mind import __version__
 from nemosine_mind.core.config import MindConfig
 from nemosine_mind.core.models import CYCLE_SCHEMA_VERSION, CycleArtifact
 from nemosine_mind.core.orchestrator import Orchestrator
-from nemosine_mind.core.registry import JsonlRegistry
+from nemosine_mind.core.registry import JsonlRegistry, migrate_cycles
 from nemosine_mind.core.sqlite_registry import SQLiteRegistry
 from nemosine_mind.main import create_app
 from nemosine_mind.runtime import build_runtime, default_registry_path
@@ -458,3 +458,29 @@ def test_runtime_selects_sqlite_storage(tmp_path, monkeypatch):
 
     assert isinstance(runtime.registry, SQLiteRegistry)
     assert runtime.registry.path == str(tmp_path / "cycles.sqlite3")
+
+
+def test_legacy_jsonl_can_be_migrated_to_sqlite(tmp_path):
+    jsonl_path = tmp_path / "legacy.jsonl"
+    jsonl_path.write_text(
+        json.dumps(
+            {
+                "cycle_id": "legacy-to-sqlite",
+                "input": {"text": "old"},
+                "config": {},
+                "output": {"text": "reply"},
+                "meta": {"ts": 1, "latency_ms": 12},
+                "status": "succeeded",
+                "error": None,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    source = JsonlRegistry(str(jsonl_path))
+    target = SQLiteRegistry(str(tmp_path / "cycles.sqlite3"))
+
+    copied = migrate_cycles(source, target)
+
+    assert copied == 1
+    assert target.get("legacy-to-sqlite")["schema_version"] == "mind.cycle/legacy"
