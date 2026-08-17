@@ -10,6 +10,11 @@ from nemosine_mind.core.registry import JsonlRegistry
 from nemosine_mind.main import create_app
 from nemosine_mind.runtime import build_runtime, default_registry_path
 from nemosine_mind.providers.anthropic import AnthropicProvider
+from nemosine_mind.providers.base import (
+    ProviderConfigurationError,
+    ProviderError,
+    ProviderResult,
+)
 from nemosine_mind.providers.factory import create_provider
 from nemosine_mind.providers.mock import MockProvider
 from nemosine_mind.providers.openai import OpenAIProvider
@@ -68,7 +73,7 @@ def test_failed_provider_call_is_auditable(tmp_path):
     assert record["output"] == {}
     assert record["error"] == {
         "type": "RuntimeError",
-        "message": "provider unavailable",
+        "message": "Unexpected provider failure",
     }
 
 
@@ -153,7 +158,7 @@ def test_mock_provider_is_deterministic_and_offline():
     }
 
     assert provider.generate(**arguments) == provider.generate(**arguments)
-    assert provider.generate(**arguments) == "[mock:mind-mock-1] hello"
+    assert provider.generate(**arguments).text == "[mock:mind-mock-1] hello"
 
 
 def test_runtime_defaults_to_mock_without_api_key(tmp_path, monkeypatch):
@@ -189,7 +194,17 @@ def test_openai_adapter_maps_the_neutral_request():
             self.arguments = kwargs
             message = type("Message", (), {"content": "openai reply"})()
             choice = type("Choice", (), {"message": message})()
-            return type("Completion", (), {"choices": [choice]})()
+            usage = type(
+                "Usage",
+                (),
+                {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5},
+            )()
+            choice.finish_reason = "stop"
+            return type(
+                "Completion",
+                (),
+                {"id": "openai-request", "choices": [choice], "usage": usage},
+            )()
 
     completions = Completions()
     client = type(
@@ -205,7 +220,12 @@ def test_openai_adapter_maps_the_neutral_request():
         max_output_tokens=100,
     )
 
-    assert reply == "openai reply"
+    assert reply == ProviderResult(
+        text="openai reply",
+        request_id="openai-request",
+        finish_reason="stop",
+        usage={"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5},
+    )
     assert completions.arguments["model"] == "openai-test"
     assert completions.arguments["max_tokens"] == 100
 
@@ -215,7 +235,17 @@ def test_anthropic_adapter_maps_system_and_conversation():
         def create(self, **kwargs):
             self.arguments = kwargs
             block = type("Block", (), {"type": "text", "text": "anthropic reply"})()
-            return type("Response", (), {"content": [block]})()
+            usage = type("Usage", (), {"input_tokens": 4, "output_tokens": 6})()
+            return type(
+                "Response",
+                (),
+                {
+                    "id": "anthropic-request",
+                    "content": [block],
+                    "stop_reason": "end_turn",
+                    "usage": usage,
+                },
+            )()
 
     messages_api = Messages()
     client = type("Client", (), {"messages": messages_api})()
@@ -230,8 +260,80 @@ def test_anthropic_adapter_maps_system_and_conversation():
         max_output_tokens=100,
     )
 
-    assert reply == "anthropic reply"
+    assert reply == ProviderResult(
+        text="anthropic reply",
+        request_id="anthropic-request",
+        finish_reason="end_turn",
+        usage={"input_tokens": 4, "output_tokens": 6},
+    )
     assert messages_api.arguments["system"] == "system rules"
     assert messages_api.arguments["messages"] == [
         {"role": "user", "content": "hello"}
     ]
+
+
+def test_provider_metadata_is_written_to_cycle(tmp_path):
+    class MetadataProvider(StubProvider):
+        def generate(self, **kwargs):
+            return ProviderResult(
+                text="reply",
+                request_id="request-123",
+                finish_reason="stop",
+                usage={"input_tokens": 7, "output_tokens": 3},
+            )
+
+    registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
+    orchestrator = Orchestrator(
+        config=MindConfig(), provider=MetadataProvider(), registry=registry
+    )
+
+    orchestrator.run("hello")
+
+    assert registry.read_last()["meta"]["provider"] == {
+        "name": "stub",
+        "model": "stub-1",
+        "request_id": "request-123",
+        "finish_reason": "stop",
+        "usage": {"input_tokens": 7, "output_tokens": 3},
+    }
+
+
+def test_provider_errors_are_safe_and_structured_in_audit(tmp_path):
+    registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
+    error = ProviderError(
+        "openai", "request_failed", "OpenAI request failed", retryable=True
+    )
+    orchestrator = Orchestrator(
+        config=MindConfig(),
+        provider=StubProvider(error=error),
+        registry=registry,
+    )
+
+    with pytest.raises(ProviderError):
+        orchestrator.run("hello")
+
+    assert registry.read_last()["error"] == {
+        "type": "ProviderError",
+        "provider": "openai",
+        "code": "request_failed",
+        "message": "OpenAI request failed",
+        "retryable": True,
+    }
+
+
+@pytest.mark.parametrize(
+    ("provider", "key_code"),
+    [
+        (OpenAIProvider(api_key="", model="openai-test"), "missing_api_key"),
+        (AnthropicProvider(api_key="", model="anthropic-test"), "missing_api_key"),
+    ],
+)
+def test_unconfigured_real_provider_has_normalized_error(provider, key_code):
+    with pytest.raises(ProviderConfigurationError) as captured:
+        provider.generate(
+            messages=[{"role": "user", "content": "hello"}],
+            temperature=0.2,
+            max_output_tokens=100,
+        )
+
+    assert captured.value.code == key_code

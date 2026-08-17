@@ -8,7 +8,7 @@ from .config import MindConfig
 from .input_handler import InputHandler
 from .models import CycleRecord, MindOutput, RunResult
 from .registry import JsonlRegistry
-from nemosine_mind.providers.base import Provider
+from nemosine_mind.providers.base import Provider, ProviderError, ProviderResult
 
 TextGenerator = Provider
 
@@ -42,7 +42,7 @@ class Orchestrator:
         messages = self._build_messages(inp.text)
 
         try:
-            reply_text = self.provider.generate(
+            provider_result = self.provider.generate(
                 messages=messages,
                 temperature=self.config.temperature,
                 max_output_tokens=self.config.max_output_tokens,
@@ -58,11 +58,27 @@ class Orchestrator:
                     "latency_ms": int((time.time() - start) * 1000),
                 },
                 status="failed",
-                error={"type": type(exc).__name__, "message": str(exc)},
+                error=(
+                    {
+                        "type": type(exc).__name__,
+                        "provider": exc.provider,
+                        "code": exc.code,
+                        "message": exc.safe_message,
+                        "retryable": exc.retryable,
+                    }
+                    if isinstance(exc, ProviderError)
+                    else {
+                        "type": type(exc).__name__,
+                        "message": "Unexpected provider failure",
+                    }
+                ),
             ))
             raise
 
-        out = MindOutput(text=reply_text)
+        # String results remain accepted temporarily for third-party and legacy adapters.
+        if isinstance(provider_result, str):
+            provider_result = ProviderResult(text=provider_result)
+        out = MindOutput(text=provider_result.text)
         self.registry.append(CycleRecord(
             cycle_id=cycle_id,
             input={"text": inp.text},
@@ -71,6 +87,13 @@ class Orchestrator:
             meta={
                 "ts": int(time.time()),
                 "latency_ms": int((time.time() - start) * 1000),
+                "provider": {
+                    "name": self.provider.name,
+                    "model": self.provider.model,
+                    "request_id": provider_result.request_id,
+                    "finish_reason": provider_result.finish_reason,
+                    "usage": provider_result.usage,
+                },
             },
         ))
         return RunResult(cycle_id=cycle_id, reply=out.text)

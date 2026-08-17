@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from .base import ProviderConfigurationError, ProviderError, ProviderResult
+
 
 class OpenAIProvider:
     name = "openai"
@@ -13,7 +15,9 @@ class OpenAIProvider:
         client: Optional[Any] = None,
     ):
         if not model:
-            raise ValueError("A model is required for the OpenAI provider")
+            raise ProviderConfigurationError(
+                "openai", "missing_model", "OpenAI model is not configured"
+            )
         self._model = model
         if client is not None:
             self._client = client
@@ -34,13 +38,34 @@ class OpenAIProvider:
         messages: List[Dict[str, str]],
         temperature: float,
         max_output_tokens: int,
-    ) -> str:
+    ) -> ProviderResult:
         if self._client is None:
-            raise RuntimeError("OPENAI_API_KEY not configured")
-        completion = self._client.chat.completions.create(
-            model=self.model,
-            temperature=temperature,
-            max_tokens=max_output_tokens,
-            messages=messages,
+            raise ProviderConfigurationError(
+                "openai", "missing_api_key", "OpenAI API key is not configured"
+            )
+        try:
+            completion = self._client.chat.completions.create(
+                model=self.model,
+                temperature=temperature,
+                max_tokens=max_output_tokens,
+                messages=messages,
+            )
+        except Exception as exc:
+            raise ProviderError(
+                "openai",
+                "request_failed",
+                "OpenAI request failed",
+                retryable=True,
+            ) from exc
+        choice = completion.choices[0]
+        usage = getattr(completion, "usage", None)
+        return ProviderResult(
+            text=choice.message.content or "",
+            request_id=getattr(completion, "id", None),
+            finish_reason=getattr(choice, "finish_reason", None),
+            usage={
+                key: value
+                for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+                if (value := getattr(usage, key, None)) is not None
+            },
         )
-        return completion.choices[0].message.content or ""
