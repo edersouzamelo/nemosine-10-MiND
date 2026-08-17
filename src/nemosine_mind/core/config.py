@@ -18,7 +18,8 @@ DEFAULT_SYSTEM_TEMPLATE = (
 class MindConfig:
     version: str = "0.2.0"
     mode: str = "mind"
-    model: str = "gpt-4o-mini"
+    provider: str = "mock"
+    model: str = "mind-mock-1"
     temperature: float = 0.2
     max_output_tokens: int = 700
     system_template: str = DEFAULT_SYSTEM_TEMPLATE
@@ -28,8 +29,19 @@ class MindConfig:
 
 
 def load_config() -> MindConfig:
+    provider = os.getenv("MIND_PROVIDER", "mock").strip().lower()
+    provider_model_env = {
+        "openai": "OPENAI_MODEL",
+        "anthropic": "ANTHROPIC_MODEL",
+    }.get(provider)
+    model = os.getenv("MIND_MODEL")
+    if not model and provider_model_env:
+        model = os.getenv(provider_model_env)
+    if not model:
+        model = "mind-mock-1" if provider == "mock" else ""
     return MindConfig(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        provider=provider,
+        model=model,
         temperature=float(os.getenv("OPENAI_TEMPERATURE", "0.2")),
         max_output_tokens=int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "700")),
     )

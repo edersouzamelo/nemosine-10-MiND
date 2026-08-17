@@ -9,9 +9,16 @@ from nemosine_mind.core.orchestrator import Orchestrator
 from nemosine_mind.core.registry import JsonlRegistry
 from nemosine_mind.main import create_app
 from nemosine_mind.runtime import build_runtime, default_registry_path
+from nemosine_mind.providers.anthropic import AnthropicProvider
+from nemosine_mind.providers.factory import create_provider
+from nemosine_mind.providers.mock import MockProvider
+from nemosine_mind.providers.openai import OpenAIProvider
 
 
-class StubMotor:
+class StubProvider:
+    name = "stub"
+    model = "stub-1"
+
     def __init__(self, reply="stub reply", error=None):
         self.reply = reply
         self.error = error
@@ -29,7 +36,7 @@ def test_http_app_uses_injected_dependencies(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     app = create_app(
         config=MindConfig(),
-        motor=StubMotor(),
+        provider=StubProvider(),
         registry=registry,
     )
     client = TestClient(app)
@@ -49,7 +56,7 @@ def test_failed_provider_call_is_auditable(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     orchestrator = Orchestrator(
         config=MindConfig(),
-        motor=StubMotor(error=RuntimeError("provider unavailable")),
+        provider=StubProvider(error=RuntimeError("provider unavailable")),
         registry=registry,
     )
 
@@ -69,7 +76,7 @@ def test_http_failure_is_auditable_without_exposing_provider_error(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     app = create_app(
         config=MindConfig(),
-        motor=StubMotor(error=RuntimeError("secret provider detail")),
+        provider=StubProvider(error=RuntimeError("secret provider detail")),
         registry=registry,
     )
 
@@ -87,7 +94,7 @@ def test_registry_writes_valid_jsonl(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "nested" / "cycles.jsonl"))
     orchestrator = Orchestrator(
         config=MindConfig(),
-        motor=StubMotor(),
+        provider=StubProvider(),
         registry=registry,
     )
 
@@ -103,7 +110,7 @@ def test_runtime_is_independent_from_http_adapter(tmp_path):
     registry = JsonlRegistry(str(tmp_path / "cycles.jsonl"))
     runtime = build_runtime(
         config=MindConfig(),
-        motor=StubMotor(reply="core reply"),
+        provider=StubProvider(reply="core reply"),
         registry=registry,
     )
 
@@ -133,5 +140,98 @@ def test_legacy_ame_imports_remain_compatible():
     from nemosine_mind.ame.registry import JsonlRegistry as LegacyRegistry
 
     assert AMEConfig().mode == "AME"
-    assert LegacyOrchestrator is Orchestrator
+    assert issubclass(LegacyOrchestrator, Orchestrator)
     assert LegacyRegistry is JsonlRegistry
+
+
+def test_mock_provider_is_deterministic_and_offline():
+    provider = MockProvider()
+    arguments = {
+        "messages": [{"role": "user", "content": "hello"}],
+        "temperature": 0.9,
+        "max_output_tokens": 1,
+    }
+
+    assert provider.generate(**arguments) == provider.generate(**arguments)
+    assert provider.generate(**arguments) == "[mock:mind-mock-1] hello"
+
+
+def test_runtime_defaults_to_mock_without_api_key(tmp_path, monkeypatch):
+    monkeypatch.setenv("MIND_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("MIND_PROVIDER", raising=False)
+
+    runtime = build_runtime()
+    result = runtime.orchestrator.run("offline demo")
+
+    assert runtime.provider.name == "mock"
+    assert result.reply == "[mock:mind-mock-1] offline demo"
+
+
+def test_default_http_demo_works_without_api_key(tmp_path, monkeypatch):
+    monkeypatch.setenv("MIND_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("MIND_PROVIDER", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    response = TestClient(create_app()).post("/chat", json={"text": "hello"})
+
+    assert response.status_code == 200
+    assert response.json()["reply"] == "[mock:mind-mock-1] hello"
+
+
+def test_provider_factory_rejects_unknown_provider():
+    with pytest.raises(ValueError, match="Unsupported provider"):
+        create_provider(MindConfig(provider="unknown", model="model"))
+
+
+def test_openai_adapter_maps_the_neutral_request():
+    class Completions:
+        def create(self, **kwargs):
+            self.arguments = kwargs
+            message = type("Message", (), {"content": "openai reply"})()
+            choice = type("Choice", (), {"message": message})()
+            return type("Completion", (), {"choices": [choice]})()
+
+    completions = Completions()
+    client = type(
+        "Client",
+        (),
+        {"chat": type("Chat", (), {"completions": completions})()},
+    )()
+    provider = OpenAIProvider(api_key="", model="openai-test", client=client)
+
+    reply = provider.generate(
+        messages=[{"role": "user", "content": "hello"}],
+        temperature=0.2,
+        max_output_tokens=100,
+    )
+
+    assert reply == "openai reply"
+    assert completions.arguments["model"] == "openai-test"
+    assert completions.arguments["max_tokens"] == 100
+
+
+def test_anthropic_adapter_maps_system_and_conversation():
+    class Messages:
+        def create(self, **kwargs):
+            self.arguments = kwargs
+            block = type("Block", (), {"type": "text", "text": "anthropic reply"})()
+            return type("Response", (), {"content": [block]})()
+
+    messages_api = Messages()
+    client = type("Client", (), {"messages": messages_api})()
+    provider = AnthropicProvider(api_key="", model="anthropic-test", client=client)
+
+    reply = provider.generate(
+        messages=[
+            {"role": "system", "content": "system rules"},
+            {"role": "user", "content": "hello"},
+        ],
+        temperature=0.2,
+        max_output_tokens=100,
+    )
+
+    assert reply == "anthropic reply"
+    assert messages_api.arguments["system"] == "system rules"
+    assert messages_api.arguments["messages"] == [
+        {"role": "user", "content": "hello"}
+    ]

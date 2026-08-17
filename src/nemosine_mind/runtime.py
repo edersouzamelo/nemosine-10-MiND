@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .ame.motor_openai import OpenAIMotor
 from .core.config import MindConfig, load_config
-from .core.orchestrator import Orchestrator, TextGenerator
+from .core.orchestrator import Orchestrator
 from .core.registry import JsonlRegistry
+from .providers.base import Provider
+from .providers.factory import create_provider
 
 
 def default_registry_path() -> str:
@@ -33,7 +34,7 @@ class MindRuntime:
     """Runtime dependencies shared by the Python core and transport adapters."""
 
     config: MindConfig
-    motor: TextGenerator
+    provider: Provider
     registry: JsonlRegistry
     orchestrator: Orchestrator
 
@@ -41,22 +42,22 @@ class MindRuntime:
 def build_runtime(
     *,
     config: Optional[MindConfig] = None,
-    motor: Optional[TextGenerator] = None,
+    provider: Optional[Provider] = None,
+    motor: Optional[Provider] = None,
     registry: Optional[JsonlRegistry] = None,
 ) -> MindRuntime:
+    if provider is not None and motor is not None:
+        raise ValueError("Pass provider or legacy motor, not both")
     active_config = config or load_config()
     active_registry = registry or JsonlRegistry(default_registry_path())
-    active_motor = motor or OpenAIMotor(
-        api_key=os.getenv("OPENAI_API_KEY", ""),
-        model=os.getenv("OPENAI_MODEL", active_config.model),
-    )
+    active_provider = provider or motor or create_provider(active_config)
     return MindRuntime(
         config=active_config,
-        motor=active_motor,
+        provider=active_provider,
         registry=active_registry,
         orchestrator=Orchestrator(
             config=active_config,
-            motor=active_motor,
+            provider=active_provider,
             registry=active_registry,
         ),
     )

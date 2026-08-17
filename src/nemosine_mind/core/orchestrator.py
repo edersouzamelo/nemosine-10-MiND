@@ -2,23 +2,15 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Dict, List, Protocol
+from typing import Dict, List
 
 from .config import MindConfig
 from .input_handler import InputHandler
 from .models import CycleRecord, MindOutput, RunResult
 from .registry import JsonlRegistry
+from nemosine_mind.providers.base import Provider
 
-
-class TextGenerator(Protocol):
-    def generate(
-        self,
-        *,
-        messages: List[Dict[str, str]],
-        temperature: float,
-        max_output_tokens: int,
-    ) -> str:
-        ...
+TextGenerator = Provider
 
 
 class Orchestrator:
@@ -27,11 +19,11 @@ class Orchestrator:
     def __init__(
         self,
         config: MindConfig,
-        motor: TextGenerator,
+        provider: Provider,
         registry: JsonlRegistry,
     ):
         self.config = config
-        self.motor = motor
+        self.provider = provider
         self.registry = registry
 
     def _build_messages(self, user_text: str) -> List[Dict[str, str]]:
@@ -50,7 +42,7 @@ class Orchestrator:
         messages = self._build_messages(inp.text)
 
         try:
-            reply_text = self.motor.generate(
+            reply_text = self.provider.generate(
                 messages=messages,
                 temperature=self.config.temperature,
                 max_output_tokens=self.config.max_output_tokens,

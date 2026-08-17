@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 from . import __version__
 from .core.config import MindConfig
-from .core.orchestrator import TextGenerator
 from .core.registry import JsonlRegistry
+from .providers.base import Provider
 from .runtime import MindRuntime, build_runtime
 
 class Message(BaseModel):
@@ -19,14 +19,18 @@ def create_app(
     *,
     runtime: Optional[MindRuntime] = None,
     config: Optional[MindConfig] = None,
-    motor: Optional[TextGenerator] = None,
+    provider: Optional[Provider] = None,
+    motor: Optional[Provider] = None,
     registry: Optional[JsonlRegistry] = None,
 ) -> FastAPI:
     """Build the HTTP adapter around an explicitly replaceable core runtime."""
-    if runtime is not None and any(item is not None for item in (config, motor, registry)):
+    if runtime is not None and any(
+        item is not None for item in (config, provider, motor, registry)
+    ):
         raise ValueError("Pass runtime or individual dependencies, not both")
     active_runtime = runtime or build_runtime(
         config=config,
+        provider=provider,
         motor=motor,
         registry=registry,
     )
