@@ -41,11 +41,26 @@ class Orchestrator:
         cycle_id = uuid.uuid4().hex[:12]
         messages = self._build_messages(inp.text)
 
-        reply_text = self.motor.generate(
-            messages=messages,
-            temperature=self.config.temperature,
-            max_output_tokens=self.config.max_output_tokens,
-        )
+        try:
+            reply_text = self.motor.generate(
+                messages=messages,
+                temperature=self.config.temperature,
+                max_output_tokens=self.config.max_output_tokens,
+            )
+        except Exception as exc:
+            self.registry.append(AMECycleRecord(
+                cycle_id=cycle_id,
+                input={"text": inp.text},
+                config=self.config.to_public_dict(),
+                output={},
+                meta={
+                    "ts": int(time.time()),
+                    "latency_ms": int((time.time() - start) * 1000),
+                },
+                status="failed",
+                error={"type": type(exc).__name__, "message": str(exc)},
+            ))
+            raise
         out = AMEOutput(text=reply_text)
 
         record = AMECycleRecord(
