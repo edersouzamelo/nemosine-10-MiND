@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -23,7 +24,7 @@ class SQLiteRegistry:
         return connection
 
     def _initialize(self) -> None:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection, connection:
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS cycles ("
                 "cycle_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, "
@@ -39,7 +40,7 @@ class SQLiteRegistry:
             artifact.to_dict(), ensure_ascii=False, separators=(",", ":")
         )
         try:
-            with self._connect() as connection:
+            with closing(self._connect()) as connection, connection:
                 connection.execute(
                     "INSERT INTO cycles(cycle_id, created_at, status, artifact_json) "
                     "VALUES (?, ?, ?, ?)",
@@ -53,7 +54,7 @@ class SQLiteRegistry:
         return CycleArtifact.from_dict(json.loads(payload)).to_dict()
 
     def get(self, cycle_id: str) -> Optional[Dict[str, Any]]:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             row = connection.execute(
                 "SELECT artifact_json FROM cycles WHERE cycle_id = ?", (cycle_id,)
             ).fetchone()
@@ -62,7 +63,7 @@ class SQLiteRegistry:
     def list(self, *, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         if limit < 1 or limit > 200 or offset < 0:
             raise ValueError("limit must be 1..200 and offset must be non-negative")
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             rows = connection.execute(
                 "SELECT artifact_json FROM cycles "
                 "ORDER BY created_at DESC, cycle_id DESC LIMIT ? OFFSET ?",

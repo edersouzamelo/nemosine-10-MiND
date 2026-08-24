@@ -1,3 +1,4 @@
+import sqlite3
 from dataclasses import replace
 
 import pytest
@@ -5,8 +6,10 @@ from fastapi.testclient import TestClient
 
 from nemosine_mind import MindConfig
 from nemosine_mind.cli import main
+from nemosine_mind.core import sqlite_registry
 from nemosine_mind.core.models import CycleArtifact
 from nemosine_mind.core.registry import JsonlRegistry
+from nemosine_mind.core.sqlite_registry import SQLiteRegistry
 from nemosine_mind.main import create_app
 from nemosine_mind.providers.mock import MockProvider
 from nemosine_mind.runtime import build_runtime
@@ -86,3 +89,25 @@ def test_dependency_injection_rejects_ambiguous_runtime(tmp_path):
 
     with pytest.raises(ValueError, match="provider or legacy motor"):
         build_runtime(provider=provider, motor=provider, registry=store)
+
+
+def test_sqlite_store_closes_every_connection(tmp_path, monkeypatch, valid_artifact):
+    opened_connections = []
+    original_connect = sqlite_registry.sqlite3.connect
+
+    def tracked_connect(*args, **kwargs):
+        connection = original_connect(*args, **kwargs)
+        opened_connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite_registry.sqlite3, "connect", tracked_connect)
+    store = SQLiteRegistry(str(tmp_path / "cycles.sqlite3"))
+
+    store.append(valid_artifact)
+    assert store.get(valid_artifact.cycle_id) is not None
+    assert store.list(limit=1)[0]["cycle_id"] == valid_artifact.cycle_id
+
+    assert opened_connections
+    for connection in opened_connections:
+        with pytest.raises(sqlite3.ProgrammingError, match="closed database"):
+            connection.execute("SELECT 1")
