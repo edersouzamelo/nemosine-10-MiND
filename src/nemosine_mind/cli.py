@@ -5,8 +5,10 @@ import importlib.util
 import json
 import os
 import sys
+import webbrowser
 from dataclasses import replace
 from pathlib import Path
+from threading import Timer
 from typing import Any, Dict, Optional, Sequence
 
 from . import __version__
@@ -191,14 +193,29 @@ def _doctor(args: argparse.Namespace) -> int:
     return 0 if report["ok"] else 1
 
 
-def _serve(args: argparse.Namespace) -> int:
+def _serve(args: argparse.Namespace, *, open_browser: bool = False) -> int:
     try:
         import uvicorn
     except ImportError:
-        print("Install nemosine-mind[http] to use 'mind serve'.", file=sys.stderr)
+        extra = "ui" if open_browser else "http"
+        print(
+            f"Install nemosine-mind[{extra}] to use this command.",
+            file=sys.stderr,
+        )
         return 1
+    if open_browser and not args.no_browser:
+        url = f"http://{args.host}:{args.port}/"
+        opener = Timer(0.8, webbrowser.open, args=(url,))
+        opener.daemon = True
+        opener.start()
     uvicorn.run("nemosine_mind.main:app", host=args.host, port=args.port, reload=False)
     return 0
+
+
+def _add_server_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--host", default=os.getenv("MIND_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.getenv("MIND_PORT", "8000")))
+    _add_runtime_options(parser)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -246,15 +263,24 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.set_defaults(handler=_doctor)
 
     serve = subparsers.add_parser("serve", help="Start the local HTTP API")
-    serve.add_argument("--host", default=os.getenv("MIND_HOST", "127.0.0.1"))
-    serve.add_argument("--port", type=int, default=int(os.getenv("MIND_PORT", "8000")))
-    _add_runtime_options(serve)
+    _add_server_options(serve)
+    serve.set_defaults(no_browser=True)
     serve.set_defaults(handler=_serve)
+
+    ui = subparsers.add_parser("ui", help="Open the local visual interface")
+    _add_server_options(ui)
+    ui.add_argument(
+        "--no-browser", action="store_true", help="Start without opening a browser"
+    )
+    ui.set_defaults(handler=lambda args: _serve(args, open_browser=True))
     return parser
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = build_parser().parse_args(argv)
+    arguments = list(argv) if argv is not None else sys.argv[1:]
+    if not arguments:
+        arguments = ["ui"]
+    args = build_parser().parse_args(arguments)
     previous = _apply_runtime_options(args)
     try:
         return int(args.handler(args))

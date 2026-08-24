@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta
+      name="description"
+      content="Interface local do MiND para interações auditáveis com modelos de linguagem."
+    />
+    <title>MiND — Interações auditáveis</title>
+    <link rel="stylesheet" href="/ui/assets/styles.css" />
+    <script src="/ui/assets/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#interaction" aria-label="MiND — início">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span>
+            <strong>MiND</strong>
+            <small>Audit middleware</small>
+          </span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Navegação principal">
+          <a class="nav-item active" href="#interaction">
+            <span class="nav-icon" aria-hidden="true">↗</span>
+            Interação
+          </a>
+          <a class="nav-item" href="#cycles">
+            <span class="nav-icon" aria-hidden="true">≡</span>
+            Ciclos
+          </a>
+        </nav>
+
+        <div class="sidebar-note">
+          <span class="status-dot"></span>
+          <div>
+            <strong>Execução local</strong>
+            <p id="privacy-note">Verificando provider…</p>
+          </div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">ESPAÇO DE TRABALHO</p>
+            <h1>Interação auditável</h1>
+          </div>
+          <div class="runtime-badges" aria-label="Configuração ativa">
+            <span class="runtime-badge">
+              <small>Provider</small>
+              <strong id="provider-name">—</strong>
+            </span>
+            <span class="runtime-badge">
+              <small>Modelo</small>
+              <strong id="model-name">—</strong>
+            </span>
+          </div>
+        </header>
+
+        <section class="dashboard" id="interaction">
+          <div class="interaction-column">
+            <article class="panel composer-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-index">01 · INPUT</p>
+                  <h2>Nova interação</h2>
+                </div>
+                <span class="local-pill">controle local</span>
+              </div>
+
+              <form id="interaction-form">
+                <label for="prompt">Mensagem</label>
+                <textarea
+                  id="prompt"
+                  name="prompt"
+                  rows="7"
+                  maxlength="20000"
+                  placeholder="Escreva o que deseja enviar ao modelo…"
+                  required
+                ></textarea>
+                <div class="composer-footer">
+                  <span id="character-count">0 / 20.000</span>
+                  <button class="primary-button" type="submit" id="send-button">
+                    <span>Executar ciclo</span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </form>
+            </article>
+
+            <article class="panel response-panel" aria-live="polite">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-index">02 · OUTPUT</p>
+                  <h2>Resposta</h2>
+                </div>
+                <span class="status-chip idle" id="response-status">Aguardando</span>
+              </div>
+
+              <div class="response-empty" id="response-empty">
+                <span class="empty-symbol" aria-hidden="true">◎</span>
+                <p>A resposta e a evidência do ciclo aparecerão aqui.</p>
+              </div>
+
+              <div class="response-content hidden" id="response-content">
+                <p class="response-text" id="response-text"></p>
+                <dl class="cycle-summary">
+                  <div>
+                    <dt>Cycle ID</dt>
+                    <dd>
+                      <button class="copy-value" id="cycle-id" type="button"></button>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Latência</dt>
+                    <dd id="cycle-latency">—</dd>
+                  </div>
+                  <div>
+                    <dt>Concluído</dt>
+                    <dd id="cycle-time">—</dd>
+                  </div>
+                </dl>
+                <button class="secondary-button" id="inspect-latest" type="button">
+                  Abrir Cycle Artifact
+                </button>
+              </div>
+
+              <div class="error-message hidden" id="response-error" role="alert"></div>
+            </article>
+          </div>
+
+          <aside class="panel history-panel" id="cycles">
+            <div class="panel-heading history-heading">
+              <div>
+                <p class="section-index">AUDIT TRAIL</p>
+                <h2>Ciclos recentes</h2>
+              </div>
+              <button class="icon-button" id="refresh-cycles" type="button" aria-label="Atualizar ciclos">
+                ↻
+              </button>
+            </div>
+            <div class="history-list" id="history-list" aria-live="polite">
+              <div class="history-loading">Carregando ciclos…</div>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="drawer-backdrop"></div>
+    <aside
+      class="artifact-drawer"
+      id="artifact-drawer"
+      aria-hidden="true"
+      aria-labelledby="artifact-title"
+    >
+      <header class="drawer-header">
+        <div>
+          <p class="section-index">CYCLE ARTIFACT</p>
+          <h2 id="artifact-title">Detalhes do ciclo</h2>
+        </div>
+        <button class="icon-button" id="close-drawer" type="button" aria-label="Fechar detalhes">×</button>
+      </header>
+      <div class="drawer-body" id="artifact-content"></div>
+    </aside>
+  </body>
+</html>

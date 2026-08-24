@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from importlib.resources import files
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import __version__
@@ -41,6 +44,17 @@ def create_app(
         version=__version__,
     )
     application.state.runtime = active_runtime
+    ui_directory = files("nemosine_mind.ui")
+    application.mount(
+        "/ui/assets",
+        StaticFiles(directory=str(ui_directory)),
+        name="ui-assets",
+    )
+
+    @application.get("/", include_in_schema=False)
+    @application.get("/ui", include_in_schema=False)
+    def local_ui():
+        return FileResponse(str(ui_directory / "index.html"))
 
     @application.get("/health", include_in_schema=False)
     @application.get("/v1/health")

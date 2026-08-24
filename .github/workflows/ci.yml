@@ -103,6 +103,24 @@ jobs:
           python -m build
           twine check dist/*
 
+      - name: Verify bundled local interface
+        run: |
+          python - <<'PY'
+          from glob import glob
+          from zipfile import ZipFile
+
+          wheel = glob("dist/*.whl")[0]
+          required = {
+              "nemosine_mind/ui/index.html",
+              "nemosine_mind/ui/styles.css",
+              "nemosine_mind/ui/app.js",
+          }
+          with ZipFile(wheel) as archive:
+              missing = required.difference(archive.namelist())
+          if missing:
+              raise SystemExit(f"Missing UI assets: {sorted(missing)}")
+          PY
+
       - name: Install base wheel without dependencies
         run: |
           python -m venv /tmp/mind-wheel-smoke
