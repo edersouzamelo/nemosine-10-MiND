@@ -42,6 +42,14 @@ def load_config() -> MindConfig:
     return MindConfig(
         provider=provider,
         model=model,
-        temperature=float(os.getenv("OPENAI_TEMPERATURE", "0.2")),
-        max_output_tokens=int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "700")),
+        temperature=float(
+            os.getenv("MIND_TEMPERATURE", os.getenv("OPENAI_TEMPERATURE", "0.2"))
+        ),
+        max_output_tokens=int(
+            os.getenv(
+                "MIND_MAX_OUTPUT_TOKENS",
+                os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "700"),
+            )
+        ),
+        system_template=os.getenv("MIND_SYSTEM_TEMPLATE", DEFAULT_SYSTEM_TEMPLATE),
     )

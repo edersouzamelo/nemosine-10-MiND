@@ -142,6 +142,20 @@ def test_default_core_configuration_is_nemosine_neutral():
     assert "AME" not in config.system_template
 
 
+def test_provider_neutral_environment_controls_runtime(monkeypatch):
+    monkeypatch.setenv("MIND_TEMPERATURE", "0.6")
+    monkeypatch.setenv("MIND_MAX_OUTPUT_TOKENS", "321")
+    monkeypatch.setenv("MIND_SYSTEM_TEMPLATE", "custom neutral template")
+
+    from nemosine_mind.core.config import load_config
+
+    config = load_config()
+
+    assert config.temperature == 0.6
+    assert config.max_output_tokens == 321
+    assert config.system_template == "custom neutral template"
+
+
 def test_legacy_ame_imports_remain_compatible():
     from nemosine_mind.ame.config import AMEConfig
     from nemosine_mind.ame.orchestrator import Orchestrator as LegacyOrchestrator

@@ -41,19 +41,23 @@ def create_app(
     )
     application.state.runtime = active_runtime
 
-    @application.get("/health")
+    @application.get("/health", include_in_schema=False)
+    @application.get("/v1/health")
     def health():
         return {"ok": True, "version": application.version}
 
-    @application.get("/ame/config")
+    @application.get("/ame/config", include_in_schema=False)
+    @application.get("/v1/config")
     def get_config():
         return active_runtime.config.to_public_dict()
 
-    @application.get("/ame/last")
+    @application.get("/ame/last", include_in_schema=False)
+    @application.get("/v1/cycles/last")
     def last_cycle():
         return {"last": active_runtime.registry.read_last()}
 
-    @application.get("/cycles")
+    @application.get("/cycles", include_in_schema=False)
+    @application.get("/v1/cycles")
     def list_cycles(limit: int = 50, offset: int = 0):
         try:
             cycles = active_runtime.registry.list(limit=limit, offset=offset)
@@ -61,14 +65,16 @@ def create_app(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"cycles": cycles, "limit": limit, "offset": offset}
 
-    @application.get("/cycles/{cycle_id}")
+    @application.get("/cycles/{cycle_id}", include_in_schema=False)
+    @application.get("/v1/cycles/{cycle_id}")
     def get_cycle(cycle_id: str):
         artifact = active_runtime.registry.get(cycle_id)
         if artifact is None:
             raise HTTPException(status_code=404, detail="Cycle not found")
         return artifact
 
-    @application.post("/chat")
+    @application.post("/chat", include_in_schema=False)
+    @application.post("/v1/interactions")
     def chat(message: Message):
         if not message.text or not message.text.strip():
             raise HTTPException(status_code=400, detail="Empty message")
@@ -79,7 +85,11 @@ def create_app(
                 status_code=503,
                 detail="Provider execution failed; inspect the cycle registry",
             ) from exc
-        return {"reply": result.reply, "cycle_id": result.cycle_id}
+        return {
+            "reply": result.reply,
+            "cycle_id": result.cycle_id,
+            "artifact": active_runtime.registry.get(result.cycle_id),
+        }
 
     return application
 
