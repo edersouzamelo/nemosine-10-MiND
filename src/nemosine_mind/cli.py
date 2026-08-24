@@ -56,7 +56,9 @@ def _restore_runtime_options(previous: Dict[str, Optional[str]]) -> None:
             os.environ[name] = value
 
 
-def _config_from_args(args: argparse.Namespace, *, force_mock: bool = False) -> MindConfig:
+def _config_from_args(
+    args: argparse.Namespace, *, force_mock: bool = False
+) -> MindConfig:
     config = load_config()
     provider = "mock" if force_mock else (args.provider or config.provider)
     model = "mind-mock-1" if force_mock else (args.model or config.model)
@@ -105,7 +107,9 @@ def _cycles(args: argparse.Namespace) -> int:
         print(f"MiND error: {exc}", file=sys.stderr)
         return 1
     if args.json:
-        _print({"cycles": cycles, "limit": args.limit, "offset": args.offset}, as_json=True)
+        _print(
+            {"cycles": cycles, "limit": args.limit, "offset": args.offset}, as_json=True
+        )
     elif not cycles:
         print("No cycles found.")
     else:
@@ -128,7 +132,10 @@ def _migrate(args: argparse.Namespace) -> int:
         print(f"Migration failed: {exc}", file=sys.stderr)
         return 1
     result = {"migrated": count, "from": source.path, "to": target.path}
-    _print(result if args.json else f"Migrated {count} cycle(s) to {target.path}", as_json=args.json)
+    _print(
+        result if args.json else f"Migrated {count} cycle(s) to {target.path}",
+        as_json=args.json,
+    )
     return 0
 
 
@@ -160,7 +167,9 @@ def doctor_report() -> Dict[str, Any]:
         }
         checks["provider_key"] = {
             "ok": bool(os.getenv(key_name)),
-            "value": f"{key_name} configured" if os.getenv(key_name) else f"{key_name} missing",
+            "value": f"{key_name} configured"
+            if os.getenv(key_name)
+            else f"{key_name} missing",
         }
     return {
         "ok": all(check["ok"] for check in checks.values()),
@@ -207,7 +216,9 @@ def build_parser() -> argparse.ArgumentParser:
     _add_runtime_options(run)
     run.set_defaults(handler=_run)
 
-    demo = subparsers.add_parser("demo", help="Run an offline deterministic demonstration")
+    demo = subparsers.add_parser(
+        "demo", help="Run an offline deterministic demonstration"
+    )
     demo.add_argument("text", nargs="?", default="Hello from MiND")
     demo.add_argument("--provider", help=argparse.SUPPRESS)
     demo.add_argument("--model", help=argparse.SUPPRESS)

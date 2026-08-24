@@ -4,11 +4,12 @@ import time
 import uuid
 from typing import Dict, List
 
+from nemosine_mind.providers.base import Provider, ProviderError, ProviderResult
+
 from .config import MindConfig
 from .input_handler import InputHandler
 from .models import CycleArtifact, MindOutput, RunResult, utc_now
 from .registry import CycleStore
-from nemosine_mind.providers.base import Provider, ProviderError, ProviderResult
 
 TextGenerator = Provider
 
@@ -49,52 +50,56 @@ class Orchestrator:
                 max_output_tokens=self.config.max_output_tokens,
             )
         except Exception as exc:
-            self.registry.append(CycleArtifact(
-                cycle_id=cycle_id,
-                status="failed",
-                created_at=created_at,
-                completed_at=utc_now(),
-                duration_ms=(time.monotonic_ns() - start_ns) // 1_000_000,
-                input={"text": inp.text},
-                config=self.config.to_public_dict(),
-                provider={"name": self.provider.name, "model": self.provider.model},
-                output={},
-                error=(
-                    {
-                        "type": type(exc).__name__,
-                        "provider": exc.provider,
-                        "code": exc.code,
-                        "message": exc.safe_message,
-                        "retryable": exc.retryable,
-                    }
-                    if isinstance(exc, ProviderError)
-                    else {
-                        "type": type(exc).__name__,
-                        "message": "Unexpected provider failure",
-                    }
-                ),
-            ))
+            self.registry.append(
+                CycleArtifact(
+                    cycle_id=cycle_id,
+                    status="failed",
+                    created_at=created_at,
+                    completed_at=utc_now(),
+                    duration_ms=(time.monotonic_ns() - start_ns) // 1_000_000,
+                    input={"text": inp.text},
+                    config=self.config.to_public_dict(),
+                    provider={"name": self.provider.name, "model": self.provider.model},
+                    output={},
+                    error=(
+                        {
+                            "type": type(exc).__name__,
+                            "provider": exc.provider,
+                            "code": exc.code,
+                            "message": exc.safe_message,
+                            "retryable": exc.retryable,
+                        }
+                        if isinstance(exc, ProviderError)
+                        else {
+                            "type": type(exc).__name__,
+                            "message": "Unexpected provider failure",
+                        }
+                    ),
+                )
+            )
             raise
 
         # String results remain accepted temporarily for third-party and legacy adapters.
         if isinstance(provider_result, str):
             provider_result = ProviderResult(text=provider_result)
         out = MindOutput(text=provider_result.text)
-        self.registry.append(CycleArtifact(
-            cycle_id=cycle_id,
-            status="succeeded",
-            created_at=created_at,
-            completed_at=utc_now(),
-            duration_ms=(time.monotonic_ns() - start_ns) // 1_000_000,
-            input={"text": inp.text},
-            config=self.config.to_public_dict(),
-            provider={
-                "name": self.provider.name,
-                "model": self.provider.model,
-                "request_id": provider_result.request_id,
-                "finish_reason": provider_result.finish_reason,
-                "usage": provider_result.usage,
-            },
-            output={"text": out.text},
-        ))
+        self.registry.append(
+            CycleArtifact(
+                cycle_id=cycle_id,
+                status="succeeded",
+                created_at=created_at,
+                completed_at=utc_now(),
+                duration_ms=(time.monotonic_ns() - start_ns) // 1_000_000,
+                input={"text": inp.text},
+                config=self.config.to_public_dict(),
+                provider={
+                    "name": self.provider.name,
+                    "model": self.provider.model,
+                    "request_id": provider_result.request_id,
+                    "finish_reason": provider_result.finish_reason,
+                    "usage": provider_result.usage,
+                },
+                output={"text": out.text},
+            )
+        )
         return RunResult(cycle_id=cycle_id, reply=out.text)

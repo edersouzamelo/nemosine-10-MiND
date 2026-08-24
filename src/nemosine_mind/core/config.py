@@ -4,6 +4,7 @@ import os
 from dataclasses import asdict, dataclass
 from typing import Any, Dict
 
+from .._version import __version__
 
 DEFAULT_SYSTEM_TEMPLATE = (
     "You are operating through MiND, an auditable LLM interaction middleware.\n"
@@ -16,7 +17,7 @@ DEFAULT_SYSTEM_TEMPLATE = (
 
 @dataclass(frozen=True)
 class MindConfig:
-    version: str = "0.2.0"
+    version: str = __version__
     mode: str = "mind"
     provider: str = "mock"
     model: str = "mind-mock-1"

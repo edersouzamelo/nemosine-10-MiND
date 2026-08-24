@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from nemosine_mind.core.config import MindConfig
 
-
 DEFAULT_SYSTEM_TEMPLATE = (
     "Agora opero sob o Sistema Nemosine Nous.\n"
     "Você está em modo AME (Arquitetura Mínima Executável).\n"

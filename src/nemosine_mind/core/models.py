@@ -4,14 +4,15 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-
 CYCLE_SCHEMA_VERSION = "mind.cycle/1"
 
 
 def utc_now() -> str:
     """Return a stable, timezone-aware UTC timestamp."""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
-        "+00:00", "Z"
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
     )
 
 
@@ -90,9 +91,11 @@ class CycleArtifact:
     def from_legacy_dict(cls, value: Dict[str, Any]) -> "CycleArtifact":
         """Read the pre-S3 JSONL shape without pretending it was schema v1."""
         meta = value.get("meta", {})
-        timestamp = datetime.fromtimestamp(
-            int(meta.get("ts", 0)), tz=timezone.utc
-        ).isoformat(timespec="seconds").replace("+00:00", "Z")
+        timestamp = (
+            datetime.fromtimestamp(int(meta.get("ts", 0)), tz=timezone.utc)
+            .isoformat(timespec="seconds")
+            .replace("+00:00", "Z")
+        )
         return cls(
             cycle_id=value["cycle_id"],
             status=value.get("status", "succeeded"),

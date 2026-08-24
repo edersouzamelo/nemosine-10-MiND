@@ -8,4 +8,5 @@ class Orchestrator(CoreOrchestrator):
     def __init__(self, config, motor, registry):
         super().__init__(config=config, provider=motor, registry=registry)
 
+
 __all__ = ["Orchestrator", "TextGenerator"]

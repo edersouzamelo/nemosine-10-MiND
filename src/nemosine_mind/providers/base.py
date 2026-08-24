@@ -40,12 +40,10 @@ class Provider(Protocol):
     """Minimal contract required by the MiND execution core."""
 
     @property
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
     @property
-    def model(self) -> str:
-        ...
+    def model(self) -> str: ...
 
     def generate(
         self,
@@ -53,5 +51,4 @@ class Provider(Protocol):
         messages: List[Dict[str, str]],
         temperature: float,
         max_output_tokens: int,
-    ) -> ProviderResult:
-        ...
+    ) -> ProviderResult: ...

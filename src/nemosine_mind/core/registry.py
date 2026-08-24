@@ -49,7 +49,9 @@ class JsonlRegistry:
             try:
                 raw = json.loads(line)
             except json.JSONDecodeError as exc:
-                is_partial_tail = index == len(raw_lines) - 1 and not line.endswith("\n")
+                is_partial_tail = index == len(raw_lines) - 1 and not line.endswith(
+                    "\n"
+                )
                 if is_partial_tail:
                     continue
                 raise RuntimeError(

@@ -12,9 +12,7 @@ from nemosine_mind.providers.mock import MockProvider
 
 def test_public_python_api_runs_and_inspects_cycle(tmp_path):
     store = SQLiteRegistry(str(tmp_path / "cycles.sqlite3"))
-    mind = Mind.create(
-        config=MindConfig(), provider=MockProvider(), store=store
-    )
+    mind = Mind.create(config=MindConfig(), provider=MockProvider(), store=store)
 
     result = mind.run("hello from python api")
 
@@ -34,7 +32,10 @@ def test_cli_demo_is_offline_and_emits_cycle_id(tmp_path, monkeypatch, capsys):
     assert exit_code == 0
     assert "[mock:mind-mock-1] offline hello" in output
     assert "cycle_id:" in output
-    assert JsonlRegistry(str(tmp_path / "cycles.jsonl")).read_last()["status"] == "succeeded"
+    assert (
+        JsonlRegistry(str(tmp_path / "cycles.jsonl")).read_last()["status"]
+        == "succeeded"
+    )
 
 
 def test_cli_run_json_returns_artifact(tmp_path, monkeypatch, capsys):
@@ -116,9 +117,7 @@ def test_cli_migrates_jsonl_to_sqlite(tmp_path, monkeypatch, capsys):
 def test_versioned_http_api_and_legacy_aliases_share_runtime(tmp_path):
     store = SQLiteRegistry(str(tmp_path / "cycles.sqlite3"))
     client = TestClient(
-        create_app(
-            config=MindConfig(), provider=MockProvider(), registry=store
-        )
+        create_app(config=MindConfig(), provider=MockProvider(), registry=store)
     )
 
     created = client.post("/v1/interactions", json={"text": "hello"})
@@ -128,7 +127,9 @@ def test_versioned_http_api_and_legacy_aliases_share_runtime(tmp_path):
     assert payload["artifact"]["cycle_id"] == payload["cycle_id"]
     assert client.get("/v1/health").status_code == 200
     assert client.get("/v1/config").json()["provider"] == "mock"
-    assert client.get("/v1/cycles").json()["cycles"][0]["cycle_id"] == payload["cycle_id"]
+    assert (
+        client.get("/v1/cycles").json()["cycles"][0]["cycle_id"] == payload["cycle_id"]
+    )
     assert client.get(f"/v1/cycles/{payload['cycle_id']}").status_code == 200
     assert client.post("/chat", json={"text": "legacy"}).status_code == 200
 

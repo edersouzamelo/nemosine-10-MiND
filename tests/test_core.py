@@ -11,7 +11,6 @@ from nemosine_mind.core.orchestrator import Orchestrator
 from nemosine_mind.core.registry import JsonlRegistry, migrate_cycles
 from nemosine_mind.core.sqlite_registry import SQLiteRegistry
 from nemosine_mind.main import create_app
-from nemosine_mind.runtime import build_runtime, default_registry_path
 from nemosine_mind.providers.anthropic import AnthropicProvider
 from nemosine_mind.providers.base import (
     ProviderConfigurationError,
@@ -21,6 +20,7 @@ from nemosine_mind.providers.base import (
 from nemosine_mind.providers.factory import create_provider
 from nemosine_mind.providers.mock import MockProvider
 from nemosine_mind.providers.openai import OpenAIProvider
+from nemosine_mind.runtime import build_runtime, default_registry_path
 
 
 class StubProvider:
@@ -137,6 +137,7 @@ def test_registry_path_respects_configured_data_directory(tmp_path, monkeypatch)
 def test_default_core_configuration_is_nemosine_neutral():
     config = MindConfig()
 
+    assert config.version == __version__
     assert config.mode == "mind"
     assert "Nemosine" not in config.system_template
     assert "AME" not in config.system_template
@@ -284,9 +285,7 @@ def test_anthropic_adapter_maps_system_and_conversation():
         usage={"input_tokens": 4, "output_tokens": 6},
     )
     assert messages_api.arguments["system"] == "system rules"
-    assert messages_api.arguments["messages"] == [
-        {"role": "user", "content": "hello"}
-    ]
+    assert messages_api.arguments["messages"] == [{"role": "user", "content": "hello"}]
 
 
 def test_provider_metadata_is_written_to_cycle(tmp_path):
@@ -440,7 +439,11 @@ def test_cycle_stores_accept_concurrent_appends(tmp_path, store_type):
     store = store_type(str(tmp_path / f"concurrent.{suffix}"))
 
     with ThreadPoolExecutor(max_workers=4) as executor:
-        list(executor.map(lambda number: store.append(make_artifact(str(number))), range(12)))
+        list(
+            executor.map(
+                lambda number: store.append(make_artifact(str(number))), range(12)
+            )
+        )
 
     assert len(store.list(limit=50)) == 12
 
@@ -448,9 +451,7 @@ def test_cycle_stores_accept_concurrent_appends(tmp_path, store_type):
 def test_http_exposes_cycle_history_and_cycle_by_id(tmp_path):
     registry = SQLiteRegistry(str(tmp_path / "cycles.sqlite3"))
     client = TestClient(
-        create_app(
-            config=MindConfig(), provider=StubProvider(), registry=registry
-        )
+        create_app(config=MindConfig(), provider=StubProvider(), registry=registry)
     )
     created = client.post("/chat", json={"text": "hello"}).json()
 

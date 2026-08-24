@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
-
+from ._version import __version__
 from .api import Mind
 from .core.config import MindConfig
 from .core.models import CycleArtifact, RunResult
@@ -18,8 +17,3 @@ __all__ = [
     "SQLiteRegistry",
     "__version__",
 ]
-
-try:
-    __version__ = version("nemosine-mind")
-except PackageNotFoundError:
-    __version__ = "0+unknown"

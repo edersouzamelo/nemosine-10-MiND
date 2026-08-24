@@ -32,7 +32,5 @@ class Mind:
     def get_cycle(self, cycle_id: str) -> Optional[Dict[str, Any]]:
         return self.runtime.registry.get(cycle_id)
 
-    def list_cycles(
-        self, *, limit: int = 50, offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    def list_cycles(self, *, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         return self.runtime.registry.list(limit=limit, offset=offset)

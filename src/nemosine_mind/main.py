@@ -11,6 +11,7 @@ from .core.registry import CycleStore
 from .providers.base import Provider
 from .runtime import MindRuntime, build_runtime
 
+
 class Message(BaseModel):
     text: str
 
