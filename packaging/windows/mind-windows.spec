@@ -1,21 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files
 
 
 datas = collect_data_files("nemosine_mind.ui")
-hiddenimports = (
-    collect_submodules("uvicorn")
-    + collect_submodules("openai")
-    + collect_submodules("anthropic")
-)
 
 analysis = Analysis(
-    ["packaging/windows_launcher.py"],
-    pathex=["src"],
+    ["../windows_launcher.py"],
+    pathex=["../../src"],
     binaries=[],
     datas=datas,
-    hiddenimports=hiddenimports,
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -39,7 +34,7 @@ executable = EXE(
     # heuristic antivirus checks, especially before the app is code-signed.
     upx=False,
     console=False,
-    icon="packaging/windows/mind.ico",
+    icon="mind.ico",
 )
 
 bundle = COLLECT(

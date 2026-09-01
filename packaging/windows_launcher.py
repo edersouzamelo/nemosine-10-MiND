@@ -16,7 +16,6 @@ import webbrowser
 from typing import Optional
 
 import uvicorn
-
 from nemosine_mind.main import app
 
 
@@ -81,6 +80,13 @@ class LocalMindServer:
 
 def smoke_test() -> int:
     """Exercise the same packaged server used by the desktop shortcut."""
+    # Providers are bundled for the next UI increment. Importing both here makes
+    # the packaging smoke test prove that their SDKs survived freezing.
+    from anthropic import Anthropic
+    from openai import OpenAI
+
+    assert Anthropic is not None
+    assert OpenAI is not None
     local = LocalMindServer()
     local.start()
     try:
