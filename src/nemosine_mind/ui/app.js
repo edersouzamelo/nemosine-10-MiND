@@ -11,6 +11,9 @@ const elements = {
   providerName: document.querySelector("#provider-name"),
   modelName: document.querySelector("#model-name"),
   privacyNote: document.querySelector("#privacy-note"),
+  systemState: document.querySelector("#system-state"),
+  sidebarVersion: document.querySelector("#sidebar-version"),
+  versionSummary: document.querySelector("#version-summary"),
   responseStatus: document.querySelector("#response-status"),
   responseEmpty: document.querySelector("#response-empty"),
   responseContent: document.querySelector("#response-content"),
@@ -68,7 +71,7 @@ function setLoading(isLoading) {
   elements.prompt.disabled = isLoading;
   elements.sendButton.querySelector("span").textContent = isLoading
     ? "Executando…"
-    : "Executar ciclo";
+    : "Iniciar ciclo auditável";
 }
 
 async function loadConfig() {
@@ -77,6 +80,9 @@ async function loadConfig() {
     state.config = config;
     elements.providerName.textContent = config.provider || "—";
     elements.modelName.textContent = config.model || "não configurado";
+    elements.sidebarVersion.textContent = `v${config.version || "—"}`;
+    elements.versionSummary.textContent = `MiND ${config.version || "—"} · estrutura pronta.`;
+    elements.systemState.textContent = "Rastreamento ativo";
     elements.privacyNote.textContent =
       config.provider === "mock"
         ? "Modo offline: nenhum dado sai desta máquina."
@@ -84,6 +90,7 @@ async function loadConfig() {
   } catch (error) {
     elements.providerName.textContent = "indisponível";
     elements.modelName.textContent = "—";
+    elements.systemState.textContent = "Verificação necessária";
     elements.privacyNote.textContent = error.message;
   }
 }

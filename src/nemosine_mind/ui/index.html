@@ -8,7 +8,7 @@
       name="description"
       content="Interface local do MiND para interações auditáveis com modelos de linguagem."
     />
-    <title>MiND — Interações auditáveis</title>
+    <title>MiND — Central de auditoria</title>
     <link rel="stylesheet" href="/ui/assets/styles.css" />
     <script src="/ui/assets/app.js" defer></script>
   </head>
@@ -16,60 +16,112 @@
     <div class="app-shell">
       <aside class="sidebar">
         <a class="brand" href="#interaction" aria-label="MiND — início">
-          <span class="brand-mark" aria-hidden="true">M</span>
+          <span class="brand-mark" aria-hidden="true">
+            <span class="brand-core">M</span>
+          </span>
           <span>
             <strong>MiND</strong>
-            <small>Audit middleware</small>
+            <small>Audit control</small>
           </span>
         </a>
 
         <nav class="primary-nav" aria-label="Navegação principal">
           <a class="nav-item active" href="#interaction">
-            <span class="nav-icon" aria-hidden="true">↗</span>
-            Interação
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3 4.5 6.2v5.5c0 4.5 3.1 7.8 7.5 9.3 4.4-1.5 7.5-4.8 7.5-9.3V6.2L12 3Z" />
+              <path d="m8.7 12 2.1 2.1 4.5-4.7" />
+            </svg>
+            Monitoramento
           </a>
           <a class="nav-item" href="#cycles">
-            <span class="nav-icon" aria-hidden="true">≡</span>
-            Ciclos
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 5.5h14M5 12h14M5 18.5h14" />
+              <path d="M8 3.5v4M16 10v4M11 16.5v4" />
+            </svg>
+            Registro de ciclos
           </a>
         </nav>
 
+        <div class="sidebar-section-label">ESTADO DO SISTEMA</div>
+
         <div class="sidebar-note">
-          <span class="status-dot"></span>
+          <span class="status-dot" aria-hidden="true"></span>
           <div>
-            <strong>Execução local</strong>
+            <strong id="system-state">Proteção ativa</strong>
             <p id="privacy-note">Verificando provider…</p>
           </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <span>MiND</span>
+          <span id="sidebar-version">—</span>
         </div>
       </aside>
 
       <main class="workspace">
         <header class="topbar">
           <div>
-            <p class="eyebrow">ESPAÇO DE TRABALHO</p>
-            <h1>Interação auditável</h1>
+            <p class="eyebrow">MIND CONTROL CENTER</p>
+            <h1>Central de interação auditável</h1>
+            <p class="topbar-description">
+              Execute interações e inspecione cada evidência registrada pelo middleware.
+            </p>
           </div>
           <div class="runtime-badges" aria-label="Configuração ativa">
             <span class="runtime-badge">
-              <small>Provider</small>
+              <span class="badge-icon provider-icon" aria-hidden="true"></span>
+              <small>Provider ativo</small>
               <strong id="provider-name">—</strong>
             </span>
             <span class="runtime-badge">
-              <small>Modelo</small>
+              <span class="badge-icon model-icon" aria-hidden="true"></span>
+              <small>Modelo em uso</small>
               <strong id="model-name">—</strong>
             </span>
           </div>
         </header>
+
+        <section class="security-overview" aria-label="Visão geral do MiND">
+          <article class="security-status-card">
+            <div class="security-emblem" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2.8 4.8 6v5.3c0 4.3 2.9 7.5 7.2 9 4.3-1.5 7.2-4.7 7.2-9V6L12 2.8Z" />
+                <path d="m8.8 11.9 2.1 2.1 4.5-4.6" />
+              </svg>
+            </div>
+            <div>
+              <span class="overview-label">RASTREAMENTO</span>
+              <strong>Monitoramento ativo</strong>
+              <p>Cada execução gera uma evidência estruturada e consultável.</p>
+            </div>
+          </article>
+          <article class="overview-card">
+            <span class="overview-icon storage-icon" aria-hidden="true"></span>
+            <div>
+              <span class="overview-label">ARMAZENAMENTO</span>
+              <strong>Registro local</strong>
+              <p>Histórico sob controle desta instalação.</p>
+            </div>
+          </article>
+          <article class="overview-card">
+            <span class="overview-icon integrity-icon" aria-hidden="true"></span>
+            <div>
+              <span class="overview-label">INTEGRIDADE</span>
+              <strong>Cycle Artifact v1</strong>
+              <p id="version-summary">Estrutura de auditoria pronta.</p>
+            </div>
+          </article>
+        </section>
 
         <section class="dashboard" id="interaction">
           <div class="interaction-column">
             <article class="panel composer-panel">
               <div class="panel-heading">
                 <div>
-                  <p class="section-index">01 · INPUT</p>
-                  <h2>Nova interação</h2>
+                  <p class="section-index">01 · EXECUÇÃO</p>
+                  <h2>Nova interação auditável</h2>
                 </div>
-                <span class="local-pill">controle local</span>
+                <span class="local-pill"><span></span> ambiente controlado</span>
               </div>
 
               <form id="interaction-form">
@@ -79,14 +131,16 @@
                   name="prompt"
                   rows="7"
                   maxlength="20000"
-                  placeholder="Escreva o que deseja enviar ao modelo…"
+                  placeholder="Escreva a mensagem que será enviada ao modelo…"
                   required
                 ></textarea>
                 <div class="composer-footer">
                   <span id="character-count">0 / 20.000</span>
                   <button class="primary-button" type="submit" id="send-button">
-                    <span>Executar ciclo</span>
-                    <span aria-hidden="true">→</span>
+                    <span>Iniciar ciclo auditável</span>
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M4 10h11M11 6l4 4-4 4" />
+                    </svg>
                   </button>
                 </div>
               </form>
@@ -95,15 +149,21 @@
             <article class="panel response-panel" aria-live="polite">
               <div class="panel-heading">
                 <div>
-                  <p class="section-index">02 · OUTPUT</p>
-                  <h2>Resposta</h2>
+                  <p class="section-index">02 · RESULTADO</p>
+                  <h2>Resposta monitorada</h2>
                 </div>
                 <span class="status-chip idle" id="response-status">Aguardando</span>
               </div>
 
               <div class="response-empty" id="response-empty">
-                <span class="empty-symbol" aria-hidden="true">◎</span>
-                <p>A resposta e a evidência do ciclo aparecerão aqui.</p>
+                <span class="empty-symbol" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3 4.5 6.2v5.5c0 4.5 3.1 7.8 7.5 9.3 4.4-1.5 7.5-4.8 7.5-9.3V6.2L12 3Z" />
+                    <path d="M8 12h8M12 8v8" />
+                  </svg>
+                </span>
+                <strong>Nenhuma execução nesta sessão</strong>
+                <p>A resposta e a evidência auditável aparecerão aqui.</p>
               </div>
 
               <div class="response-content hidden" id="response-content">
@@ -125,7 +185,7 @@
                   </div>
                 </dl>
                 <button class="secondary-button" id="inspect-latest" type="button">
-                  Abrir Cycle Artifact
+                  Inspecionar Cycle Artifact
                 </button>
               </div>
 
@@ -136,11 +196,14 @@
           <aside class="panel history-panel" id="cycles">
             <div class="panel-heading history-heading">
               <div>
-                <p class="section-index">AUDIT TRAIL</p>
-                <h2>Ciclos recentes</h2>
+                <p class="section-index">CENTRAL DE AUDITORIA</p>
+                <h2>Registro de ciclos</h2>
               </div>
               <button class="icon-button" id="refresh-cycles" type="button" aria-label="Atualizar ciclos">
-                ↻
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M16.5 7.3A7 7 0 1 0 17 12" />
+                  <path d="M16.5 3.5v3.8h-3.8" />
+                </svg>
               </button>
             </div>
             <div class="history-list" id="history-list" aria-live="polite">
@@ -160,10 +223,12 @@
     >
       <header class="drawer-header">
         <div>
-          <p class="section-index">CYCLE ARTIFACT</p>
-          <h2 id="artifact-title">Detalhes do ciclo</h2>
+          <p class="section-index">RELATÓRIO DE AUDITORIA · CYCLE ARTIFACT</p>
+          <h2 id="artifact-title">Inspeção do ciclo</h2>
         </div>
-        <button class="icon-button" id="close-drawer" type="button" aria-label="Fechar detalhes">×</button>
+        <button class="icon-button" id="close-drawer" type="button" aria-label="Fechar detalhes">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg>
+        </button>
       </header>
       <div class="drawer-body" id="artifact-content"></div>
     </aside>

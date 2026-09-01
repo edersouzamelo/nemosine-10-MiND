@@ -26,10 +26,11 @@ def test_local_ui_and_assets_are_served_from_package(tmp_path):
 
     assert page.status_code == 200
     assert alias.status_code == 200
-    assert "Interação auditável" in page.text
+    assert "Central de interação auditável" in page.text
+    assert "Monitoramento ativo" in page.text
     assert "Cycle Artifact" in page.text
     assert stylesheet.status_code == 200
-    assert "--accent" in stylesheet.text
+    assert "--accent: #00a88f" in stylesheet.text
     assert script.status_code == 200
     assert 'request("/v1/interactions"' in script.text
 
