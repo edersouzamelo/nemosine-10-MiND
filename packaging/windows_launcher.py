@@ -7,12 +7,14 @@ and keeps a small control window available to reopen or stop the local service.
 from __future__ import annotations
 
 import argparse
+import os
 import socket
 import sys
 import threading
 import time
 import urllib.request
 import webbrowser
+from pathlib import Path
 from typing import Optional
 
 import uvicorn
@@ -22,6 +24,13 @@ from nemosine_mind.main import app
 HOST = "127.0.0.1"
 PREFERRED_PORT = 8000
 STARTUP_TIMEOUT_SECONDS = 20.0
+
+
+def write_smoke_report(message: str) -> None:
+    """Write CI-only diagnostics without showing a console to end users."""
+    report_path = os.getenv("MIND_SMOKE_REPORT")
+    if report_path:
+        Path(report_path).write_text(message, encoding="utf-8")
 
 
 def available_port(preferred: int = PREFERRED_PORT) -> int:
@@ -87,14 +96,20 @@ def smoke_test() -> int:
 
     assert Anthropic is not None
     assert OpenAI is not None
+    write_smoke_report("providers loaded")
     local = LocalMindServer()
     local.start()
     try:
         if not wait_until_ready(local.url):
+            write_smoke_report("local health endpoint timed out")
             return 1
         with urllib.request.urlopen(local.url, timeout=2.0) as response:
             page = response.read().decode("utf-8")
-        return 0 if "Central de interação auditável" in page else 1
+        if "Central de interação auditável" not in page:
+            write_smoke_report("local UI marker was not found")
+            return 1
+        write_smoke_report("ok")
+        return 0
     finally:
         local.stop()
 
@@ -179,6 +194,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         return smoke_test() if args.smoke_test else desktop_main()
     except Exception as exc:
+        if args.smoke_test:
+            write_smoke_report(f"{type(exc).__name__}: {exc}")
         if not args.smoke_test:
             try:
                 from tkinter import messagebox

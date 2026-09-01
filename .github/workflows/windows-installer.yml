@@ -44,8 +44,11 @@ jobs:
 
       - name: Verify packaged application
         shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-packaged-smoke.txt
         run: |
           $process = Start-Process -FilePath ".\dist\MiND\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
           if ($process.ExitCode -ne 0) { exit $process.ExitCode }
 
       - name: Locate Inno Setup
@@ -70,6 +73,8 @@ jobs:
 
       - name: Verify clean installer path
         shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-installed-smoke.txt
         run: |
           $setup = Get-ChildItem ".\dist-installer\MiND-Setup-*-windows-x64.exe" | Select-Object -First 1
           if (-not $setup) { throw "Installer was not generated" }
@@ -77,6 +82,7 @@ jobs:
           $process = Start-Process -FilePath $setup.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$installDir" -Wait -PassThru
           if ($process.ExitCode -ne 0) { exit $process.ExitCode }
           $smoke = Start-Process -FilePath "$installDir\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
           if ($smoke.ExitCode -ne 0) { exit $smoke.ExitCode }
           Get-FileHash $setup.FullName -Algorithm SHA256 | ForEach-Object {
             "$($_.Hash.ToLower())  $($setup.Name)" | Set-Content ".\dist-installer\SHA256SUMS.txt"
