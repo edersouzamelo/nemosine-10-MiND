@@ -16,8 +16,8 @@ import webbrowser
 from typing import Optional
 
 import uvicorn
-from nemosine_mind.main import app
 
+from nemosine_mind.main import app
 
 HOST = "127.0.0.1"
 PREFERRED_PORT = 8000
