@@ -81,8 +81,8 @@ jobs:
 
       - name: Check code
         run: |
-          ruff check src tests
-          ruff format --check src tests
+          ruff check src tests packaging
+          ruff format --check src tests packaging
           mypy
 
   package:
