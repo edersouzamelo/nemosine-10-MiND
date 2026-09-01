@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from importlib.resources import files
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
@@ -44,7 +44,7 @@ def create_app(
         version=__version__,
     )
     application.state.runtime = active_runtime
-    ui_directory = files("nemosine_mind.ui")
+    ui_directory = Path(__file__).resolve().parent / "ui"
     application.mount(
         "/ui/assets",
         StaticFiles(directory=str(ui_directory)),

@@ -43,9 +43,10 @@ jobs:
         run: pyinstaller --noconfirm --clean packaging/windows/mind-windows.spec
 
       - name: Verify packaged application
+        shell: pwsh
         run: |
-          & ".\dist\MiND\MiND.exe" --smoke-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $process = Start-Process -FilePath ".\dist\MiND\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
 
       - name: Locate Inno Setup
         id: inno
@@ -75,8 +76,8 @@ jobs:
           $installDir = Join-Path $env:RUNNER_TEMP "mind-installed"
           $process = Start-Process -FilePath $setup.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$installDir" -Wait -PassThru
           if ($process.ExitCode -ne 0) { exit $process.ExitCode }
-          & "$installDir\MiND.exe" --smoke-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $smoke = Start-Process -FilePath "$installDir\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if ($smoke.ExitCode -ne 0) { exit $smoke.ExitCode }
           Get-FileHash $setup.FullName -Algorithm SHA256 | ForEach-Object {
             "$($_.Hash.ToLower())  $($setup.Name)" | Set-Content ".\dist-installer\SHA256SUMS.txt"
           }
@@ -89,6 +90,7 @@ jobs:
         run: |
           $setup = Get-ChildItem ".\dist-installer\MiND-Setup-*-windows-x64.exe" | Select-Object -First 1
           if (-not $setup) { throw "Installer was not generated" }
+          $checksum = Get-Item ".\dist-installer\SHA256SUMS.txt"
           $version = python -c "from nemosine_mind import __version__; print(__version__)"
           $tag = "v$version-windows-preview.1"
           $title = "MiND $version para Windows, Preview 1"
@@ -105,7 +107,7 @@ jobs:
 
           Esta é uma versão de teste ainda sem assinatura digital. Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
           "@
-          gh release create $tag $setup.FullName ".\dist-installer\SHA256SUMS.txt" `
+          gh release create $tag $setup.FullName $checksum.FullName `
             --prerelease `
             --target "$env:GITHUB_SHA" `
             --title $title `
