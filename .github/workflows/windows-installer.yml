@@ -39,6 +39,22 @@ jobs:
       - name: Verify desktop launcher before packaging
         run: python packaging/windows_launcher.py --smoke-test
 
+      - name: Build console diagnostics application
+        run: >-
+          pyinstaller --noconfirm --clean
+          --distpath dist-diagnostics
+          --workpath build-diagnostics
+          packaging/windows/mind-smoke.spec
+
+      - name: Verify frozen application with diagnostics
+        shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-diagnostics-smoke.txt
+        run: |
+          & ".\dist-diagnostics\MiND-Diagnostics\MiND-Diagnostics.exe" --smoke-test
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Build self-contained application directory
         run: pyinstaller --noconfirm --clean packaging/windows/mind-windows.spec
 

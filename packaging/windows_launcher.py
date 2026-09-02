@@ -19,7 +19,6 @@ from typing import Optional
 
 import uvicorn
 
-
 HOST = "127.0.0.1"
 PREFERRED_PORT = 8000
 STARTUP_TIMEOUT_SECONDS = 20.0
