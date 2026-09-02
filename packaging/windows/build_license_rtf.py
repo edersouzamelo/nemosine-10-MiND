@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_LICENSE = REPOSITORY_ROOT / "LICENSE"
 OUTPUT_LICENSE = REPOSITORY_ROOT / "build-msi" / "LICENSE.rtf"
