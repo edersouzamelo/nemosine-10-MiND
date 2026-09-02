@@ -118,6 +118,38 @@ jobs:
             ".\build-msi\mind-files.wixobj"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Verify upgrade from installed Preview 4
+        shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-upgrade-smoke.txt
+        run: |
+          $previous = Join-Path $env:RUNNER_TEMP "MiND-1.0.2-preview4.msi"
+          Invoke-WebRequest "https://github.com/edersouzamelo/nemosine-10-MiND/releases/download/v1.0.2-windows-preview.4/MiND-1.0.2-windows-x64.msi" -OutFile $previous
+          $installDir = Join-Path $env:RUNNER_TEMP "mind-upgrade-installed"
+          $oldLog = Join-Path $env:RUNNER_TEMP "mind-msi-old.log"
+          $old = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/i", "`"$previous`"", "/qn", "/norestart", "INSTALLFOLDER=`"$installDir`"", "/l*v", "`"$oldLog`"" `
+            -Wait -PassThru
+          if ($old.ExitCode -ne 0) {
+            Get-Content $oldLog
+            exit $old.ExitCode
+          }
+          $setup = Get-ChildItem ".\dist-installer\MiND-*-windows-x64.msi" | Select-Object -First 1
+          $upgradeLog = Join-Path $env:RUNNER_TEMP "mind-msi-upgrade.log"
+          $upgrade = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/i", "`"$($setup.FullName)`"", "/qn", "/norestart", "INSTALLFOLDER=`"$installDir`"", "/l*v", "`"$upgradeLog`"" `
+            -Wait -PassThru
+          if ($upgrade.ExitCode -ne 0) {
+            Get-Content $upgradeLog
+            exit $upgrade.ExitCode
+          }
+          $smoke = Start-Process -FilePath "$installDir\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
+          if ($smoke.ExitCode -ne 0) { exit $smoke.ExitCode }
+          $remove = Start-Process -FilePath "msiexec.exe" -ArgumentList "/x", "`"$($setup.FullName)`"", "/qn", "/norestart" -Wait -PassThru
+          if ($remove.ExitCode -ne 0) { exit $remove.ExitCode }
+          if (Test-Path "$installDir\MiND.exe") { throw "Upgrade uninstall left MiND.exe behind" }
+
       - name: Verify clean MSI install, launch and uninstall
         shell: pwsh
         env:
@@ -161,8 +193,8 @@ jobs:
           if (-not $setup) { throw "MSI installer was not generated" }
           $checksum = Get-Item ".\dist-installer\SHA256SUMS.txt"
           $version = python -c "from nemosine_mind import __version__; print(__version__)"
-          $tag = "v$version-windows-preview.4"
-          $title = "MiND $version para Windows, Preview 4"
+          $tag = "v$version-windows-preview.1"
+          $title = "MiND $version para Windows, Preview 1"
           $notes = @"
           Instalador MSI autocontido do MiND para Windows.
 
@@ -181,7 +213,7 @@ jobs:
           - controlador local para abrir e encerrar o MiND;
           - providers OpenAI e Anthropic incluídos para a próxima etapa visual.
 
-          Esta versão substitui os previews anteriores e aceita atualização sobre outra instalação 1.0.2. O Preview 1 usava um executor temporário bloqueado pelo Avast; o Preview 2 continha texto de licença provisório do WiX. O instalador agora incorpora o texto oficial da GNU GPL v3.0. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
+          Esta é a primeira prévia do MiND 1.0.3 e substitui corretamente instalações 1.0.2. O Preview 1 usava um executor temporário bloqueado pelo Avast; o Preview 2 continha texto de licença provisório do WiX. O instalador agora incorpora o texto oficial da GNU GPL v3.0. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
           "@
           gh release create $tag $setup.FullName $checksum.FullName `
             --prerelease `
