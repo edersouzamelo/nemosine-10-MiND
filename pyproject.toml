@@ -96,7 +96,7 @@ where = ["src"]
 include = ["nemosine_mind*"]
 
 [tool.setuptools.package-data]
-"nemosine_mind.ui" = ["*.html", "*.css", "*.js"]
+"nemosine_mind.ui" = ["*.html", "*.css", "*.js", "*.svg"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

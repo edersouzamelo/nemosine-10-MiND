@@ -114,6 +114,7 @@ jobs:
               "nemosine_mind/ui/index.html",
               "nemosine_mind/ui/styles.css",
               "nemosine_mind/ui/app.js",
+              "nemosine_mind/ui/mind-logo.svg",
           }
           with ZipFile(wheel) as archive:
               missing = required.difference(archive.namelist())
