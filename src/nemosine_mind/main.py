@@ -63,6 +63,7 @@ def create_app(
         ):
             response.headers["Cache-Control"] = "no-store, max-age=0"
         return response
+
     application.mount(
         "/ui/assets",
         StaticFiles(directory=str(ui_directory)),
