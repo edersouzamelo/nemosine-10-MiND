@@ -17,11 +17,20 @@ import webbrowser
 from pathlib import Path
 from typing import Optional
 
-import uvicorn
-
 HOST = "127.0.0.1"
 PREFERRED_PORT = 8000
 STARTUP_TIMEOUT_SECONDS = 20.0
+
+
+def ensure_hidden_standard_streams() -> None:
+    """Give windowed dependencies safe streams without opening a console."""
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
+
+ensure_hidden_standard_streams()
 
 
 def write_smoke_report(message: str) -> None:
@@ -60,6 +69,8 @@ class LocalMindServer:
     """Run Uvicorn in the background while the desktop controller is open."""
 
     def __init__(self, port: Optional[int] = None):
+        import uvicorn
+
         from nemosine_mind.main import app
 
         self.port = port if port is not None else available_port()
