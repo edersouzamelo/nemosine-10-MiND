@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -54,6 +54,15 @@ def create_app(
     )
     application.state.runtime = active_runtime
     ui_directory = bundled_ui_directory()
+
+    @application.middleware("http")
+    async def prevent_stale_local_ui(request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path in {"/", "/ui"} or request.url.path.startswith(
+            "/ui/assets/"
+        ):
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+        return response
     application.mount(
         "/ui/assets",
         StaticFiles(directory=str(ui_directory)),

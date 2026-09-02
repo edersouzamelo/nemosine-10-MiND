@@ -1,9 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files
+from pathlib import Path
 
 
-datas = collect_data_files("nemosine_mind.ui")
+project_root = Path(SPECPATH).parents[1]
+ui_root = project_root / "src" / "nemosine_mind" / "ui"
+datas = [
+    (str(path), "nemosine_mind/ui")
+    for path in ui_root.iterdir()
+    if path.suffix in {".html", ".css", ".js", ".svg"}
+]
 
 analysis = Analysis(
     ["../windows_launcher.py"],

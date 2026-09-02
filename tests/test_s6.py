@@ -37,6 +37,7 @@ def test_local_ui_and_assets_are_served_from_package(tmp_path):
     assert "Limpar dados" in page.text
     assert "Fazer backup" in page.text
     assert stylesheet.status_code == 200
+    assert stylesheet.headers["cache-control"] == "no-store, max-age=0"
     assert "--accent: #00a88f" in stylesheet.text
     assert script.status_code == 200
     assert 'request("/v1/interactions"' in script.text
@@ -45,6 +46,7 @@ def test_local_ui_and_assets_are_served_from_package(tmp_path):
     assert 'panelName === "cleanup"' in script.text
     assert 'panelName === "backup"' in script.text
     assert logo.status_code == 200
+    assert logo.headers["cache-control"] == "no-store, max-age=0"
     assert 'aria-label="MiND"' in logo.text
 
 
