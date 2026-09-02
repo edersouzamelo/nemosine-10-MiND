@@ -14,7 +14,7 @@
       InstallPrivileges="elevated"
       Description="MiND, central local de interações auditáveis" />
 
-    <MajorUpgrade DowngradeErrorMessage="Já existe uma versão mais recente do MiND instalada." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="Já existe uma versão mais recente do MiND instalada." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
     <Property Id="ARPPRODUCTICON" Value="MindIcon" />

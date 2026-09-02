@@ -161,12 +161,18 @@ jobs:
           if (-not $setup) { throw "MSI installer was not generated" }
           $checksum = Get-Item ".\dist-installer\SHA256SUMS.txt"
           $version = python -c "from nemosine_mind import __version__; print(__version__)"
-          $tag = "v$version-windows-preview.3"
-          $title = "MiND $version para Windows, Preview 3"
+          $tag = "v$version-windows-preview.4"
+          $title = "MiND $version para Windows, Preview 4"
           $notes = @"
           Instalador MSI autocontido do MiND para Windows.
 
           Inclui:
+          - nova identidade visual com o M integrado às arestas do cubo;
+          - central local de auditoria com oito acessos laterais;
+          - painéis para seletor de LLM, Plug and Play e atualizações;
+          - exportação filtrável dos Cycle Artifacts em JSON;
+          - backup local completo dos registros;
+          - painel de ocupação e limpeza protegida;
           - interface local de auditoria;
           - instalação nativa do Windows, sem Python, ZIP, BAT ou executor temporário;
           - instalação em Arquivos de Programas mediante confirmação padrão do Windows;
@@ -175,7 +181,7 @@ jobs:
           - controlador local para abrir e encerrar o MiND;
           - providers OpenAI e Anthropic incluídos para a próxima etapa visual.
 
-          Esta versão substitui os previews anteriores. O Preview 1 usava um executor temporário bloqueado pelo Avast; o Preview 2 continha texto de licença provisório do WiX. O instalador agora incorpora o texto oficial da GNU GPL v3.0. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
+          Esta versão substitui os previews anteriores e aceita atualização sobre outra instalação 1.0.2. O Preview 1 usava um executor temporário bloqueado pelo Avast; o Preview 2 continha texto de licença provisório do WiX. O instalador agora incorpora o texto oficial da GNU GPL v3.0. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
           "@
           gh release create $tag $setup.FullName $checksum.FullName `
             --prerelease `
