@@ -78,6 +78,7 @@
     </Feature>
 
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="build-msi\LICENSE.rtf" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Abrir o MiND agora" />
     <Property Id="WixShellExecTarget" Value="[INSTALLFOLDER]MiND.exe" />
     <CustomAction
