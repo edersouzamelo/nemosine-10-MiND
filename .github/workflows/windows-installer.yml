@@ -67,39 +67,78 @@ jobs:
           if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
           if ($process.ExitCode -ne 0) { exit $process.ExitCode }
 
-      - name: Locate Inno Setup
-        id: inno
+      - name: Install WiX Toolset
+        id: wix
         shell: pwsh
         run: |
-          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $compiler)) {
-            choco install innosetup --no-progress -y
+          $candle = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin\candle.exe"
+          $light = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin\light.exe"
+          $heat = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin\heat.exe"
+          if (-not (Test-Path $candle)) {
+            choco install wixtoolset --no-progress -y
           }
-          if (-not (Test-Path $compiler)) {
-            throw "Inno Setup compiler was not found"
+          if (-not (Test-Path $candle) -or -not (Test-Path $light) -or -not (Test-Path $heat)) {
+            throw "WiX Toolset was not found"
           }
-          "compiler=$compiler" >> $env:GITHUB_OUTPUT
+          "candle=$candle" >> $env:GITHUB_OUTPUT
+          "light=$light" >> $env:GITHUB_OUTPUT
+          "heat=$heat" >> $env:GITHUB_OUTPUT
 
-      - name: Build one-click installer
+      - name: Build native Windows Installer package
         shell: pwsh
         run: |
           $version = python -c "from nemosine_mind import __version__; print(__version__)"
-          & "${{ steps.inno.outputs.compiler }}" "/DMindVersion=$version" "packaging\windows\mind-installer.iss"
+          New-Item -ItemType Directory -Force -Path ".\build-msi", ".\dist-installer" | Out-Null
+          & "${{ steps.wix.outputs.heat }}" dir ".\dist\MiND" `
+            -cg MindFiles -dr INSTALLFOLDER -gg -scom -sreg -sfrag -srd `
+            -var var.MindSource -out ".\build-msi\mind-files.wxs"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "${{ steps.wix.outputs.candle }}" `
+            -arch x64 `
+            "-dMindVersion=$version" `
+            "-dMindSource=$pwd\dist\MiND" `
+            -ext WixUIExtension -ext WixUtilExtension `
+            -out ".\build-msi\" `
+            ".\packaging\windows\mind-installer.wxs" `
+            ".\build-msi\mind-files.wxs"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "${{ steps.wix.outputs.light }}" `
+            -ext WixUIExtension -ext WixUtilExtension `
+            -cultures:pt-BR `
+            -out ".\dist-installer\MiND-$version-windows-x64.msi" `
+            ".\build-msi\mind-installer.wixobj" `
+            ".\build-msi\mind-files.wixobj"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Verify clean installer path
+      - name: Verify clean MSI install, launch and uninstall
         shell: pwsh
         env:
           MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-installed-smoke.txt
         run: |
-          $setup = Get-ChildItem ".\dist-installer\MiND-Setup-*-windows-x64.exe" | Select-Object -First 1
-          if (-not $setup) { throw "Installer was not generated" }
+          $setup = Get-ChildItem ".\dist-installer\MiND-*-windows-x64.msi" | Select-Object -First 1
+          if (-not $setup) { throw "MSI installer was not generated" }
           $installDir = Join-Path $env:RUNNER_TEMP "mind-installed"
-          $process = Start-Process -FilePath $setup.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$installDir" -Wait -PassThru
-          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
+          $installLog = Join-Path $env:RUNNER_TEMP "mind-msi-install.log"
+          $process = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/i", "`"$($setup.FullName)`"", "/qn", "/norestart", "INSTALLFOLDER=`"$installDir`"", "/l*v", "`"$installLog`"" `
+            -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            Get-Content $installLog
+            exit $process.ExitCode
+          }
+          if (-not (Test-Path "$installDir\MiND.exe")) { throw "MiND.exe was not installed" }
           $smoke = Start-Process -FilePath "$installDir\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
           if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
           if ($smoke.ExitCode -ne 0) { exit $smoke.ExitCode }
+          $uninstallLog = Join-Path $env:RUNNER_TEMP "mind-msi-uninstall.log"
+          $remove = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/x", "`"$($setup.FullName)`"", "/qn", "/norestart", "/l*v", "`"$uninstallLog`"" `
+            -Wait -PassThru
+          if ($remove.ExitCode -ne 0) {
+            Get-Content $uninstallLog
+            exit $remove.ExitCode
+          }
+          if (Test-Path "$installDir\MiND.exe") { throw "MSI uninstall left MiND.exe behind" }
           Get-FileHash $setup.FullName -Algorithm SHA256 | ForEach-Object {
             "$($_.Hash.ToLower())  $($setup.Name)" | Set-Content ".\dist-installer\SHA256SUMS.txt"
           }
@@ -110,24 +149,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $setup = Get-ChildItem ".\dist-installer\MiND-Setup-*-windows-x64.exe" | Select-Object -First 1
-          if (-not $setup) { throw "Installer was not generated" }
+          $setup = Get-ChildItem ".\dist-installer\MiND-*-windows-x64.msi" | Select-Object -First 1
+          if (-not $setup) { throw "MSI installer was not generated" }
           $checksum = Get-Item ".\dist-installer\SHA256SUMS.txt"
           $version = python -c "from nemosine_mind import __version__; print(__version__)"
-          $tag = "v$version-windows-preview.1"
-          $title = "MiND $version para Windows, Preview 1"
+          $tag = "v$version-windows-preview.2"
+          $title = "MiND $version para Windows, Preview 2"
           $notes = @"
-          Primeiro instalador autocontido do MiND para Windows.
+          Instalador MSI autocontido do MiND para Windows.
 
           Inclui:
           - interface local de auditoria;
-          - instalação sem Python, ZIP ou arquivo BAT;
+          - instalação nativa do Windows, sem Python, ZIP, BAT ou executor temporário;
           - atalho no menu Iniciar;
-          - atalho opcional na área de trabalho;
+          - atalhos no menu Iniciar e na área de trabalho;
           - controlador local para abrir e encerrar o MiND;
           - providers OpenAI e Anthropic incluídos para a próxima etapa visual.
 
-          Esta é uma versão de teste ainda sem assinatura digital. Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
+          Esta versão substitui o Preview 1, cujo executor temporário foi bloqueado pelo Avast. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
           "@
           gh release create $tag $setup.FullName $checksum.FullName `
             --prerelease `
@@ -140,7 +179,7 @@ jobs:
         with:
           name: mind-windows-installer
           path: |
-            dist-installer/MiND-Setup-*-windows-x64.exe
+            dist-installer/MiND-*-windows-x64.msi
             dist-installer/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 7
