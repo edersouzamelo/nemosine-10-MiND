@@ -1,7 +1,5 @@
 """Convert the repository GPL license into the RTF used by Windows Installer."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 
