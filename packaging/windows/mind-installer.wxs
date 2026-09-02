@@ -10,8 +10,8 @@
     <Package
       InstallerVersion="500"
       Compressed="yes"
-      InstallScope="perUser"
-      InstallPrivileges="limited"
+      InstallScope="perMachine"
+      InstallPrivileges="elevated"
       Description="MiND, central local de interações auditáveis" />
 
     <MajorUpgrade DowngradeErrorMessage="Já existe uma versão mais recente do MiND instalada." />
@@ -23,10 +23,8 @@
     <Icon Id="MindIcon" SourceFile="packaging\windows\mind.ico" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="LocalAppDataFolder">
-        <Directory Id="LocalProgramsFolder" Name="Programs">
-          <Directory Id="INSTALLFOLDER" Name="MiND" />
-        </Directory>
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="MiND" />
       </Directory>
       <Directory Id="ProgramMenuFolder">
         <Directory Id="ApplicationProgramsFolder" Name="MiND" />
@@ -35,7 +33,7 @@
     </Directory>
 
     <DirectoryRef Id="ApplicationProgramsFolder">
-      <Component Id="StartMenuShortcut" Guid="A6DE7330-E89B-47D5-947D-DF0107C79A54">
+      <Component Id="StartMenuShortcut" Guid="A6DE7330-E89B-47D5-947D-DF0107C79A54" Win64="yes">
         <Shortcut
           Id="StartMenuMiND"
           Name="MiND"
@@ -45,7 +43,7 @@
           Icon="MindIcon" />
         <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
         <RegistryValue
-          Root="HKCU"
+          Root="HKLM"
           Key="Software\MiND"
           Name="StartMenuShortcut"
           Type="integer"
@@ -55,7 +53,7 @@
     </DirectoryRef>
 
     <DirectoryRef Id="DesktopFolder">
-      <Component Id="DesktopShortcut" Guid="C27C538B-AE07-4F80-BE1B-801E00F22CE4">
+      <Component Id="DesktopShortcut" Guid="C27C538B-AE07-4F80-BE1B-801E00F22CE4" Win64="yes">
         <Shortcut
           Id="DesktopMiND"
           Name="MiND"
@@ -64,7 +62,7 @@
           WorkingDirectory="INSTALLFOLDER"
           Icon="MindIcon" />
         <RegistryValue
-          Root="HKCU"
+          Root="HKLM"
           Key="Software\MiND"
           Name="DesktopShortcut"
           Type="integer"

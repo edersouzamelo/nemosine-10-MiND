@@ -161,6 +161,7 @@ jobs:
           Inclui:
           - interface local de auditoria;
           - instalação nativa do Windows, sem Python, ZIP, BAT ou executor temporário;
+          - instalação em Arquivos de Programas mediante confirmação padrão do Windows;
           - atalho no menu Iniciar;
           - atalhos no menu Iniciar e na área de trabalho;
           - controlador local para abrir e encerrar o MiND;
