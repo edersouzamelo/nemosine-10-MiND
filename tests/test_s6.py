@@ -23,16 +23,29 @@ def test_local_ui_and_assets_are_served_from_package(tmp_path):
     alias = client.get("/ui")
     stylesheet = client.get("/ui/assets/styles.css")
     script = client.get("/ui/assets/app.js")
+    logo = client.get("/ui/assets/mind-logo.svg")
 
     assert page.status_code == 200
     assert alias.status_code == 200
     assert "Central de interação auditável" in page.text
     assert "Monitoramento ativo" in page.text
     assert "Cycle Artifact" in page.text
+    assert "Seletor de LLM" in page.text
+    assert "Plug and Play" in page.text
+    assert "Verificar atualizações" in page.text
+    assert "Exportar dados" in page.text
+    assert "Limpar dados" in page.text
+    assert "Fazer backup" in page.text
     assert stylesheet.status_code == 200
     assert "--accent: #00a88f" in stylesheet.text
     assert script.status_code == 200
     assert 'request("/v1/interactions"' in script.text
+    assert 'panelName === "llm"' in script.text
+    assert 'panelName === "export"' in script.text
+    assert 'panelName === "cleanup"' in script.text
+    assert 'panelName === "backup"' in script.text
+    assert logo.status_code == 200
+    assert 'aria-label="MiND"' in logo.text
 
 
 def test_visual_flow_uses_real_cycle_api(tmp_path):
