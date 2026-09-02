@@ -19,7 +19,6 @@ from typing import Optional
 
 import uvicorn
 
-from nemosine_mind.main import app
 
 HOST = "127.0.0.1"
 PREFERRED_PORT = 8000
@@ -62,6 +61,8 @@ class LocalMindServer:
     """Run Uvicorn in the background while the desktop controller is open."""
 
     def __init__(self, port: Optional[int] = None):
+        from nemosine_mind.main import app
+
         self.port = port if port is not None else available_port()
         self.url = f"http://{HOST}:{self.port}"
         config = uvicorn.Config(

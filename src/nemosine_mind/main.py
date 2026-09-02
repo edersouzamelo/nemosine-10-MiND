@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -17,6 +18,14 @@ from .runtime import MindRuntime, build_runtime
 
 class Message(BaseModel):
     text: str
+
+
+def bundled_ui_directory() -> Path:
+    """Resolve UI assets in normal Python and frozen Windows applications."""
+    frozen_root = getattr(sys, "_MEIPASS", None)
+    if frozen_root:
+        return Path(frozen_root) / "nemosine_mind" / "ui"
+    return Path(__file__).resolve().parent / "ui"
 
 
 def create_app(
@@ -44,7 +53,7 @@ def create_app(
         version=__version__,
     )
     application.state.runtime = active_runtime
-    ui_directory = Path(__file__).resolve().parent / "ui"
+    ui_directory = bundled_ui_directory()
     application.mount(
         "/ui/assets",
         StaticFiles(directory=str(ui_directory)),
