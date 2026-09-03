@@ -101,7 +101,7 @@ def _credential_target(provider: str) -> str:
     return f"MiND:{provider.strip().lower()}:api-key"
 
 
-def _windows_credentials_api() -> Any:
+def _windows_credentials_api() -> Any:  # pragma: no cover - exercised by Windows CI
     if os.name != "nt":
         raise OSError("Windows Credential Manager is unavailable")
     win_dll = _ctypes_member("WinDLL")
