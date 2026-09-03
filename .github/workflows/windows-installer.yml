@@ -1,5 +1,7 @@
 name: Windows installer
 
+# Public previews are released only by an explicitly authorized commit marker.
+
 on:
   workflow_dispatch:
   push:
