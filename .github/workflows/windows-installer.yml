@@ -219,6 +219,7 @@ jobs:
           - nova identidade visual com o M integrado às arestas do cubo;
           - central local de auditoria com oito acessos laterais;
           - seletor funcional de LLM, modelo e chave;
+          - GPT-5.4 Mini sugerido como modelo inicial da OpenAI;
           - chave protegida no Cofre de Credenciais do Windows;
           - Plug and Play agnóstico com tutorial HTTP e Python;
           - exportação filtrável dos Cycle Artifacts em JSON;
