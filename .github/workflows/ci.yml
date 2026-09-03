@@ -133,9 +133,14 @@ jobs:
               "nemosine_mind/ui/mind-logo.svg",
           }
           with ZipFile(wheel) as archive:
-              missing = required.difference(archive.namelist())
+              names = set(archive.namelist())
+              missing = required.difference(names)
+              legal_names = {name.rsplit("/", 1)[-1] for name in names if "/licenses/" in name}
+              missing_legal = {"LICENSE", "NOTICE", "TRADEMARKS.md", "THIRD_PARTY_NOTICES.txt"}.difference(legal_names)
           if missing:
               raise SystemExit(f"Missing UI assets: {sorted(missing)}")
+          if missing_legal:
+              raise SystemExit(f"Missing legal files: {sorted(missing_legal)}")
           PY
 
       - name: Install base wheel without dependencies

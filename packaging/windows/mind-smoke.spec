@@ -10,6 +10,19 @@ datas = [
     for path in ui_root.iterdir()
     if path.suffix in {".html", ".css", ".js", ".svg"}
 ]
+datas.extend(
+    [
+        (str(project_root / "LICENSE"), "."),
+        (str(project_root / "NOTICE"), "."),
+        (str(project_root / "TRADEMARKS.md"), "."),
+        (str(project_root / "INSTALLER_LEGAL.txt"), "."),
+        (str(project_root / "build-legal" / "THIRD_PARTY_NOTICES.txt"), "."),
+        (
+            str(project_root / "build-legal" / "THIRD_PARTY_LICENSES"),
+            "THIRD_PARTY_LICENSES",
+        ),
+    ]
+)
 
 analysis = Analysis(
     ["../windows_launcher.py"],

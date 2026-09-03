@@ -2,11 +2,16 @@
 
 **MiND: A Minimal Deterministic Middleware for Auditable LLM Interaction**
 
-MiND is a lightweight, API-agnostic middleware designed to mediate interactions between users and large language models (LLMs). It provides a deterministic orchestration layer that enables structured preprocessing, routing, and logging of prompts and responses without modifying the underlying models.
+MiND is a lightweight, provider-neutral middleware designed to mediate
+interactions between applications and large language models (LLMs). It provides
+a deterministic execution and audit layer that normalizes inputs, assembles
+requests, records provider responses, and persists versioned Cycle Artifacts
+without modifying the underlying models.
 
 The name **MiND** originally refers to *Minimal Nemosine Design*. In the context of this repository and its associated software publication, MiND is used to denote a **Minimal Deterministic Middleware** for auditable LLM interaction. This naming reflects the architectural role of the system while remaining consistent with its origin as an extracted core from the broader Nemosine framework.
 
-Internally, the reference implementation still is called AME ("arquiteura Mínima Executável). In this repository, AME corresponds directly to MiND and represents its executable reference implementation.
+Legacy AME imports remain available only as a temporary compatibility layer. The
+active implementation lives in the neutral `nemosine_mind.core` package.
 
 
 ---
@@ -20,7 +25,11 @@ Large Language Models (LLMs) are increasingly integrated into workflows involvin
 - Portability of user interaction histories
 - Post-hoc inspection of model behavior
 
-MiND addresses these limitations by introducing a deterministic middleware layer positioned between users and LLMs. Instead of forwarding raw user inputs directly to a model, MiND performs structured preprocessing, routing, and logging of interactions before and after each model invocation.
+MiND addresses these limitations by introducing a deterministic middleware layer
+positioned between applications and LLMs. In the current implementation, MiND
+normalizes the input, builds an explicit request, calls the selected provider,
+normalizes the result, and records the interaction before returning it to the
+client.
 
 MiND is explicitly non-agentic. It does not perform autonomous planning, goal formulation, multi-step reasoning, tool orchestration, or adaptive control. The middleware operates strictly as a deterministic and externally controlled interaction layer.
 
@@ -30,7 +39,21 @@ MiND does not implement fine-tuning, RLHF, model alignment techniques, or intern
 
 ## Installation and Minimal Test
 
-MiND can be installed directly via pip from the public repository: python -m pip install git+https://github.com/edersouzamelo/nemosine-10-MiND.git. After installation, run python -m nemosine_mind to start the deterministic middleware server. By default, the API will be available at http://127.0.0.1:8000/docs, providing an interactive Swagger UI for testing. No API key is required for minimal execution validation. To perform a quick functional test, use the /chat endpoint in the Swagger interface with a JSON body such as { "text": "hello" }. The server will return a structured JSON response including a deterministic reply and a cycle_id, confirming successful installation and execution.
+The current Windows preview is available from the repository's
+[Releases](https://github.com/edersouzamelo/nemosine-10-MiND/releases) page. It
+contains a self-contained installer and local visual interface.
+
+For Python development from the recovery branch:
+
+```bash
+python -m pip install "nemosine-mind[ui] @ git+https://github.com/edersouzamelo/nemosine-10-MiND.git@agent/mind-s1-core-recovery"
+mind demo "hello"
+mind ui
+```
+
+The offline mock requires no API key. It returns a predictable test response and
+a `cycle_id`. OpenAI and Anthropic require their optional SDKs and a provider
+credential.
 
 ### Provider credentials
 
@@ -54,7 +77,9 @@ MiND is built around the following core principles:
   The middleware itself is non-agentic and deterministic. It does not perform autonomous planning or decision-making.
 
 - **Externalized State**  
-  Interaction state, context updates, and routing decisions are handled explicitly outside the LLM, rather than being embedded implicitly in conversational history.
+  Requests, provider results, and audit records are handled explicitly outside
+  the LLM. Future routing decisions and semantic extensions will also be recorded
+  outside the model when implemented.
 
 - **Auditability**  
   Every interaction generates structured artifacts, enabling inspection and post-hoc analysis without access to model internals.
@@ -69,21 +94,24 @@ MiND is built around the following core principles:
 
 ## Architecture
 
-MiND operates by classifying incoming inputs into predefined processing modules. Each module is responsible for a restricted subset of the interaction context, such as:
+MiND currently executes one explicit processing path: normalize input, assemble the
+request, call the selected provider, normalize its result, and persist a versioned
+Cycle Artifact. Provider selection is explicit and does not give the software
+autonomous goals, planning, memory, or tool choice.
 
-- Input classification
-- Context retrieval
-- Prompt assembly
-- Response handling and validation
-
-By isolating these responsibilities, MiND prevents unintended cross-contamination of conversational state and makes each processing step explicit and inspectable.
+Intent classification, deterministic routing through specialized processing
+corridors, context retrieval, semantic heuristics, and policy modules are planned
+extensions. They are not part of the current runtime and are not claimed as
+implemented capabilities.
 
 During execution, MiND generates structured artifacts, including:
 
 - JSON-based interaction logs
 - Persistent records stored in a relational database (optional)
 
-As a result, prompt construction, context updates, and response delivery become explicit steps rather than opaque side effects of conversational history managed by external platforms.
+As a result, request construction, provider execution, response delivery, and the
+associated metadata become inspectable records rather than opaque side effects of
+a provider-managed conversation history.
 
 ---
 
@@ -93,9 +121,6 @@ By externalizing interaction state and control logic, MiND enables several pract
 
 - **Auditable interaction trails**  
   Creation of structured logs for LLM usage without requiring access to model internals.
-
-- **Reduced data exposure**  
-  Limiting the information transmitted to each individual model invocation, including optional redaction or symbolic encoding of sensitive data.
 
 - **Portability across LLM providers**  
   Preservation of user interaction histories when switching between different LLM APIs.
@@ -119,14 +144,15 @@ Its contribution lies in providing a controlled, inspectable, and reproducible i
 
 ## Example Use Case
 
-In a research workflow involving sensitive medical data, MiND can be configured to:
+In a research workflow comparing LLM providers, MiND can be configured to:
 
 - Log all interactions in structured form
-- Redact patient identifiers before model invocation
 - Store interaction traces locally
 - Avoid reliance on provider-specific conversation histories
 
-This enables reproducible experimentation and auditing while minimizing data exposure.
+This enables traceable experimentation and post-hoc auditing across providers.
+Applications handling sensitive data still need their own redaction and governance
+controls before sending content to a commercial provider.
 
 ---
 
@@ -150,7 +176,22 @@ MiND can be used independently and does not require adoption of the broader Nemo
 
 ## License
 
-This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+MiND is licensed under the **Apache License, Version 2.0**.
+
+Copyright 2026 Edervaldo José de Souza Melo.
+
+The Apache License permits use, modification, reproduction, and distribution,
+including commercial use, subject to its terms.
+
+See:
+
+- `LICENSE`: full Apache License 2.0 text
+- `NOTICE`: copyright and attribution notice
+- `TRADEMARKS.md`: policy for the MiND name, logo, and project branding
+- `THIRD_PARTY_NOTICES.txt`: third-party licensing and release-audit policy
+
+The MiND name, logo, visual identity, and other project identifiers are not
+licensed as branding under the Apache License 2.0.
 
 ---
 

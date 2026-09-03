@@ -11,6 +11,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+dist-legal/
 downloads/
 eggs/
 .eggs/
@@ -74,6 +75,10 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
+
+# Local generated installer/legal artifacts
+build-legal/
+build-msi/
 
 # Jupyter Notebook
 .ipynb_checkpoints

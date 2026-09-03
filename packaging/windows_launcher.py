@@ -146,7 +146,9 @@ def smoke_test() -> int:
         if 'aria-label="MiND"' not in logo:
             write_smoke_report("new MiND logo was not found")
             return 1
-        write_smoke_report("ok: MiND 1.0.4 secure provider configuration")
+        from nemosine_mind import __version__
+
+        write_smoke_report(f"ok: MiND {__version__} secure provider configuration")
         return 0
     finally:
         local.stop()

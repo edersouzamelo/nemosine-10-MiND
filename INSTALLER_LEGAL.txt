@@ -1,0 +1,31 @@
+MiND, LICENSE AND LEGAL NOTICE
+
+Copyright 2026 Edervaldo José de Souza Melo.
+
+MiND is made available under the Apache License, Version 2.0.
+
+The license permits use, reproduction, modification, and distribution of the
+software, including for commercial purposes, subject to the terms and
+conditions of the Apache License, Version 2.0.
+
+Installation or use of MiND does not transfer ownership of the copyright,
+project name, logo, visual identity, or other project identifiers.
+
+The Apache License, Version 2.0 does not grant trademark or branding rights in
+the MiND name or visual identity, except for reasonable and customary use
+necessary to identify the origin of the software.
+
+MiND is provided on an “AS IS” basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied, to the extent permitted by applicable law. See
+the Apache License, Version 2.0 for the specific language governing permissions,
+warranties, and limitations of liability.
+
+Third-party components included with or used by MiND may be governed by
+separate licenses and notices. Those licenses remain applicable to their
+respective components.
+
+The complete license text accompanies every official source or binary
+distribution of MiND and is available in the installation directory as the
+file LICENSE.
+
+Official license: https://www.apache.org/licenses/LICENSE-2.0

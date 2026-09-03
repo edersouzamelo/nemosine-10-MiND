@@ -36,6 +36,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[ui,providers]" "pyinstaller>=6.10,<7"
 
+      - name: Build release-specific legal inventory
+        run: >-
+          python packaging/windows/build_third_party_notices.py
+          --output build-legal/THIRD_PARTY_NOTICES.txt
+          --licenses-dir build-legal/THIRD_PARTY_LICENSES
+
       - name: Verify desktop launcher before packaging
         run: python packaging/windows_launcher.py --smoke-test
 
@@ -108,11 +114,14 @@ jobs:
           New-Item -ItemType Directory -Force -Path ".\build-msi", ".\dist-installer" | Out-Null
           python ".\packaging\windows\build_license_rtf.py"
           $licenseText = Get-Content ".\build-msi\LICENSE.rtf" -Raw
-          if ($licenseText -notmatch "GNU GENERAL PUBLIC LICENSE") {
-            throw "Generated installer license is not GNU GPL"
+          if ($licenseText -notmatch "Apache License" -or $licenseText -notmatch "Version 2.0, January 2004") {
+            throw "Generated installer legal text is not Apache-2.0"
           }
           if ($licenseText -match "Lorem ipsum") {
             throw "Placeholder license text must never enter the installer"
+          }
+          @("LICENSE", "NOTICE", "TRADEMARKS.md", "INSTALLER_LEGAL.txt", "THIRD_PARTY_NOTICES.txt", "THIRD_PARTY_LICENSES") | ForEach-Object {
+            if (-not (Test-Path ".\dist\MiND\$_")) { throw "Missing legal distribution item: $_" }
           }
           & "${{ steps.wix.outputs.heat }}" dir ".\dist\MiND" `
             -cg MindFiles -dr INSTALLFOLDER -gg -scom -sreg -sfrag -srd `
@@ -233,7 +242,7 @@ jobs:
           - controlador local para abrir e encerrar o MiND;
           - providers OpenAI e Anthropic incluídos no aplicativo.
 
-          Esta versão substitui corretamente instalações 1.0.2 e 1.0.3. A chave nunca é salva nos arquivos de configuração, no histórico ou no GitHub. O instalador incorpora o texto oficial da GNU GPL v3.0. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
+          Esta versão substitui corretamente instalações anteriores. A chave nunca é salva nos arquivos de configuração, no histórico ou no GitHub. O instalador incorpora o aviso jurídico, o texto oficial da Apache License 2.0 e o inventário de licenças das dependências empacotadas. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
           "@
           gh release create $tag $setup.FullName $checksum.FullName `
             --prerelease `
