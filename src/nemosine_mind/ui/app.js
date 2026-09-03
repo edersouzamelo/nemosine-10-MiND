@@ -1,5 +1,6 @@
 const state = {
   config: null,
+  providerStatus: null,
   currentArtifact: null,
   allCycles: null,
 };
@@ -102,6 +103,11 @@ async function loadConfig() {
     elements.systemState.textContent = "Verificação necessária";
     elements.privacyNote.textContent = error.message;
   }
+}
+
+async function loadProviderStatus() {
+  state.providerStatus = await request("/v1/providers");
+  return state.providerStatus;
 }
 
 function historyItem(cycle) {
@@ -218,21 +224,6 @@ function closeArtifact() {
   elements.drawerBackdrop.classList.add("hidden");
 }
 
-function providerOption(name, description) {
-  const active = state.config?.provider === name.toLowerCase();
-  return `
-    <article class="control-option ${active ? "active" : ""}">
-      <span class="option-symbol" aria-hidden="true">${name.slice(0, 1)}</span>
-      <div>
-        <div class="option-heading">
-          <h3>${escapeHtml(name)}</h3>
-          <span class="option-status ${active ? "active" : "planned"}">${active ? "ativo" : "a configurar"}</span>
-        </div>
-        <p>${escapeHtml(description)}</p>
-      </div>
-    </article>`;
-}
-
 function integrationOption(name, description, status = "não conectado") {
   return `
     <article class="control-option integration-option">
@@ -302,20 +293,41 @@ function filterExport(records, period, subject) {
 function renderControlPanel(panelName) {
   const version = escapeHtml(state.config?.version || "—");
   if (panelName === "llm") {
+    const activeProvider = state.config?.provider || "mock";
+    const providers = state.providerStatus?.providers || [];
+    const activeStatus = providers.find((item) => item.name === activeProvider);
+    const keyStatus = activeProvider === "mock"
+      ? "O modo Mock não usa chave."
+      : activeStatus?.key_configured
+        ? "Já existe uma chave protegida neste computador. Você pode deixar o campo vazio."
+        : "Ainda não há chave protegida para este provider.";
     elements.controlEyebrow.textContent = "PROVIDERS E MODELOS";
     elements.controlTitle.textContent = "Seletor de LLM";
     elements.controlContent.innerHTML = `
       <section class="control-intro">
         <span class="control-kicker">ROTEAMENTO CONTROLADO</span>
         <h3>Escolha quem processará a interação</h3>
-        <p>O provider ativo continua sendo definido com segurança pela instalação. A seleção persistente e a gestão de chaves serão conectadas nesta frente.</p>
+        <p>A configuração é feita aqui. No Windows, a chave fica protegida no Cofre de Credenciais do seu usuário.</p>
       </section>
-      <div class="control-option-list">
-        ${providerOption("Mock", "Simulador determinístico, gratuito e totalmente offline.")}
-        ${providerOption("OpenAI", "Modelos OpenAI por chave configurada localmente.")}
-        ${providerOption("Anthropic", "Modelos Claude por chave configurada localmente.")}
-      </div>
-      <p class="control-notice">Chaves de API nunca serão incluídas no Cycle Artifact nem exibidas no histórico.</p>`;
+      <form class="control-form" id="provider-form">
+        <label>Provider
+          <select name="provider" id="provider-select">
+            <option value="mock" ${activeProvider === "mock" ? "selected" : ""}>Mock, offline e gratuito</option>
+            <option value="openai" ${activeProvider === "openai" ? "selected" : ""}>OpenAI</option>
+            <option value="anthropic" ${activeProvider === "anthropic" ? "selected" : ""}>Anthropic</option>
+          </select>
+        </label>
+        <label>Modelo
+          <input name="model" id="provider-model" value="${escapeHtml(state.config?.model || "mind-mock-1")}" autocomplete="off" />
+        </label>
+        <label id="api-key-label" class="${activeProvider === "mock" ? "hidden" : ""}">Chave da API
+          <input name="api_key" id="provider-api-key" type="password" autocomplete="new-password" placeholder="Cole a chave somente aqui" />
+        </label>
+        <p class="credential-status" id="credential-status">${escapeHtml(keyStatus)}</p>
+        <button class="primary-button" type="submit">Salvar e ativar</button>
+        <p class="form-feedback" id="provider-feedback" aria-live="polite"></p>
+      </form>
+      <p class="control-notice">A chave nunca é incluída no Cycle Artifact, nos relatórios, nos logs ou no GitHub.</p>`;
     return;
   }
 
@@ -324,15 +336,16 @@ function renderControlPanel(panelName) {
     elements.controlTitle.textContent = "Plug and Play";
     elements.controlContent.innerHTML = `
       <section class="control-intro">
-        <span class="control-kicker">CONEXÕES LOCAIS</span>
-        <h3>Integre outros softwares ao middleware</h3>
-        <p>Este painel reunirá conectores instaláveis e mostrará quais sistemas estão enviando interações auditáveis ao MiND.</p>
+        <span class="control-kicker">PROTOCOLO AGNÓSTICO</span>
+        <h3>Coloque o MiND entre qualquer software e sua IA</h3>
+        <p>O sistema conectado envia a interação ao MiND por HTTP ou pela API Python. O MiND registra o ciclo e encaminha ao provider escolhido.</p>
       </section>
       <div class="control-option-list">
-        ${integrationOption("Nemosine", "Rastreamento de interações cognitivas e eventos do núcleo.")}
-        ${integrationOption("MCL", "Auditoria das interações de IA dentro do aplicativo logístico.")}
-        ${integrationOption("Protocolo genérico", "Contrato HTTP/Python para outros softwares compatíveis.", "planejado")}
-      </div>`;
+        ${integrationOption("1. Escolha o adaptador", "Use POST /v1/interactions para qualquer linguagem ou Mind.run() em aplicações Python.", "tutorial")}
+        ${integrationOption("2. Envie a mensagem", "O software fornece o texto e mantém sua própria interface e regras de negócio.", "tutorial")}
+        ${integrationOption("3. Guarde o cycle_id", "A resposta volta junto com o identificador auditável para consulta posterior.", "tutorial")}
+      </div>
+      <p class="control-notice">Um link de repositório GitHub, sozinho, não basta: o outro software precisa chamar o contrato HTTP ou Python do MiND.</p>`;
     return;
   }
 
@@ -442,8 +455,15 @@ function setActiveNavigation(activeItem) {
   });
 }
 
-function openControlPanel(panelName, trigger) {
+async function openControlPanel(panelName, trigger) {
   closeArtifact();
+  if (panelName === "llm") {
+    try {
+      await loadProviderStatus();
+    } catch {
+      state.providerStatus = null;
+    }
+  }
   renderControlPanel(panelName);
   setActiveNavigation(trigger);
   elements.controlDrawer.classList.add("open");
@@ -529,6 +549,33 @@ elements.sectionNav.forEach((item) => {
 elements.closeControl.addEventListener("click", closeControlPanel);
 elements.controlBackdrop.addEventListener("click", closeControlPanel);
 elements.controlContent.addEventListener("submit", async (event) => {
+  if (event.target.id === "provider-form") {
+    event.preventDefault();
+    const feedback = document.querySelector("#provider-feedback");
+    const submit = event.target.querySelector('button[type="submit"]');
+    feedback.textContent = "Protegendo a configuração…";
+    submit.disabled = true;
+    try {
+      const data = new FormData(event.target);
+      const payload = {
+        provider: data.get("provider"),
+        model: data.get("model"),
+      };
+      if (data.get("api_key")) payload.api_key = data.get("api_key");
+      await request("/v1/providers/active", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+      await Promise.all([loadConfig(), loadProviderStatus()]);
+      renderControlPanel("llm");
+      document.querySelector("#provider-feedback").textContent =
+        "Provider ativado. O MiND já está pronto para uma interação real.";
+    } catch (error) {
+      feedback.textContent = error.message;
+      submit.disabled = false;
+    }
+    return;
+  }
   if (event.target.id !== "export-form") return;
   event.preventDefault();
   const feedback = document.querySelector("#export-feedback");
@@ -542,6 +589,26 @@ elements.controlContent.addEventListener("submit", async (event) => {
   } catch (error) {
     feedback.textContent = error.message;
   }
+});
+elements.controlContent.addEventListener("change", (event) => {
+  if (event.target.id !== "provider-select") return;
+  const provider = event.target.value;
+  const defaults = {
+    mock: "mind-mock-1",
+    openai: "gpt-5.4-mini",
+    anthropic: "",
+  };
+  const model = document.querySelector("#provider-model");
+  const keyLabel = document.querySelector("#api-key-label");
+  const status = document.querySelector("#credential-status");
+  const providerState = state.providerStatus?.providers?.find((item) => item.name === provider);
+  model.value = defaults[provider];
+  keyLabel.classList.toggle("hidden", provider === "mock");
+  status.textContent = provider === "mock"
+    ? "O modo Mock não usa chave."
+    : providerState?.key_configured
+      ? "Já existe uma chave protegida neste computador. Você pode deixar o campo vazio."
+      : "Ainda não há chave protegida para este provider.";
 });
 elements.controlContent.addEventListener("click", async (event) => {
   if (event.target.id !== "backup-local") return;

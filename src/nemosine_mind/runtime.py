@@ -11,22 +11,12 @@ from .core.registry import CycleStore, JsonlRegistry
 from .core.sqlite_registry import SQLiteRegistry
 from .providers.base import Provider
 from .providers.factory import create_provider
+from .settings import local_data_directory
 
 
 def default_registry_path() -> str:
     """Return a writable user-data path, never a path inside the package."""
-    configured = os.getenv("MIND_DATA_DIR")
-    if configured:
-        data_dir = Path(configured).expanduser()
-    elif os.name == "nt" and os.getenv("LOCALAPPDATA"):
-        data_dir = Path(os.environ["LOCALAPPDATA"]) / "MiND"
-    else:
-        xdg_data_home = os.getenv("XDG_DATA_HOME")
-        data_dir = (
-            Path(xdg_data_home).expanduser()
-            if xdg_data_home
-            else Path.home() / ".local" / "share"
-        ) / "mind"
+    data_dir = local_data_directory()
     return str(data_dir / "cycles.jsonl")
 
 

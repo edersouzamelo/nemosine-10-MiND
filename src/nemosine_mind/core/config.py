@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Dict
 
 from .._version import __version__
+from ..settings import DEFAULT_MODELS, load_local_settings
 
 DEFAULT_SYSTEM_TEMPLATE = (
     "You are operating through MiND, an auditable LLM interaction middleware.\n"
@@ -30,16 +31,21 @@ class MindConfig:
 
 
 def load_config() -> MindConfig:
-    provider = os.getenv("MIND_PROVIDER", "mock").strip().lower()
+    local_settings = load_local_settings()
+    provider = (
+        os.getenv("MIND_PROVIDER", local_settings.get("provider", "mock"))
+        .strip()
+        .lower()
+    )
     provider_model_env = {
         "openai": "OPENAI_MODEL",
         "anthropic": "ANTHROPIC_MODEL",
     }.get(provider)
-    model = os.getenv("MIND_MODEL")
+    model = os.getenv("MIND_MODEL") or local_settings.get("model", "")
     if not model and provider_model_env:
-        model = os.getenv(provider_model_env)
+        model = os.getenv(provider_model_env) or ""
     if not model:
-        model = "mind-mock-1" if provider == "mock" else ""
+        model = DEFAULT_MODELS.get(provider, "")
     return MindConfig(
         provider=provider,
         model=model,

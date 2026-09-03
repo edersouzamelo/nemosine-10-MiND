@@ -16,6 +16,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets:
+    name: Secret protection
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Reject tracked API keys
+        shell: bash
+        run: |
+          if git grep -I -q -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}'; then
+            echo "Potential API key found in a tracked file."
+            exit 1
+          fi
+          git check-ignore -q .env.local
+
   tests:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest

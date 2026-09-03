@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nemosine-mind"
-version = "1.0.3"
+version = "1.0.4"
 description = "MiND: A Minimal Deterministic Middleware for Auditing, Reproducing, and Logging Large Language Model Interactions in Research Workflows."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -104,6 +104,7 @@ addopts = "--strict-config --strict-markers"
 filterwarnings = [
   "error",
   "ignore:Please use `import python_multipart` instead\\.:PendingDeprecationWarning",
+  "ignore:The anyio\\.abc\\.BlockingPortal alias is deprecated:DeprecationWarning",
 ]
 
 [tool.coverage.run]

@@ -136,8 +136,12 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
+!.env.*.example
 .envrc
 .venv
+.venv-*
 env/
 venv/
 ENV/
@@ -212,3 +216,7 @@ __marimo__/
 # MiND runtime data
 cycles.jsonl
 src/nemosine_mind/runtime/
+
+# Local MiND credentials and settings
+secrets.json
+settings.json

@@ -116,6 +116,10 @@ def smoke_test() -> int:
             return 1
         with urllib.request.urlopen(local.url, timeout=2.0) as response:
             page = response.read().decode("utf-8")
+        with urllib.request.urlopen(
+            f"{local.url}/ui/assets/app.js", timeout=2.0
+        ) as response:
+            script = response.read().decode("utf-8")
         required_markers = (
             "Central de interação auditável",
             "mind-logo.svg",
@@ -125,8 +129,13 @@ def smoke_test() -> int:
             "Exportar dados",
             "Limpar dados",
             "Fazer backup",
+            "Cofre de Credenciais",
+            "PROTOCOLO AGNÓSTICO",
         )
-        missing = [marker for marker in required_markers if marker not in page]
+        bundled_interface = page + script
+        missing = [
+            marker for marker in required_markers if marker not in bundled_interface
+        ]
         if missing:
             write_smoke_report(f"missing UI markers: {missing}")
             return 1
@@ -137,7 +146,7 @@ def smoke_test() -> int:
         if 'aria-label="MiND"' not in logo:
             write_smoke_report("new MiND logo was not found")
             return 1
-        write_smoke_report("ok: MiND 1.0.3 visual control center")
+        write_smoke_report("ok: MiND 1.0.4 secure provider configuration")
         return 0
     finally:
         local.stop()

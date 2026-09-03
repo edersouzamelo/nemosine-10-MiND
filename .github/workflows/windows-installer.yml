@@ -39,6 +39,23 @@ jobs:
       - name: Verify desktop launcher before packaging
         run: python packaging/windows_launcher.py --smoke-test
 
+      - name: Verify Windows credential protection
+        shell: pwsh
+        run: |
+          @'
+          from nemosine_mind.settings import (
+              delete_stored_api_key,
+              read_stored_api_key,
+              store_api_key,
+          )
+
+          value = "mind-ci-credential-roundtrip"
+          store_api_key("openai", value)
+          assert read_stored_api_key("openai") == value
+          delete_stored_api_key("openai")
+          assert read_stored_api_key("openai") is None
+          '@ | python -
+
       - name: Build console diagnostics application
         run: >-
           pyinstaller --noconfirm --clean
@@ -201,7 +218,9 @@ jobs:
           Inclui:
           - nova identidade visual com o M integrado às arestas do cubo;
           - central local de auditoria com oito acessos laterais;
-          - painéis para seletor de LLM, Plug and Play e atualizações;
+          - seletor funcional de LLM, modelo e chave;
+          - chave protegida no Cofre de Credenciais do Windows;
+          - Plug and Play agnóstico com tutorial HTTP e Python;
           - exportação filtrável dos Cycle Artifacts em JSON;
           - backup local completo dos registros;
           - painel de ocupação e limpeza protegida;
@@ -211,9 +230,9 @@ jobs:
           - atalho no menu Iniciar;
           - atalhos no menu Iniciar e na área de trabalho;
           - controlador local para abrir e encerrar o MiND;
-          - providers OpenAI e Anthropic incluídos para a próxima etapa visual.
+          - providers OpenAI e Anthropic incluídos no aplicativo.
 
-          Esta é a primeira prévia do MiND 1.0.3 e substitui corretamente instalações 1.0.2. O Preview 1 usava um executor temporário bloqueado pelo Avast; o Preview 2 continha texto de licença provisório do WiX. O instalador agora incorpora o texto oficial da GNU GPL v3.0. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
+          Esta versão substitui corretamente instalações 1.0.2 e 1.0.3. A chave nunca é salva nos arquivos de configuração, no histórico ou no GitHub. O instalador incorpora o texto oficial da GNU GPL v3.0. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
           "@
           gh release create $tag $setup.FullName $checksum.FullName `
             --prerelease `

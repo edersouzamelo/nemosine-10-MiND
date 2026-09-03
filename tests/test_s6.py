@@ -63,6 +63,66 @@ def test_visual_flow_uses_real_cycle_api(tmp_path):
     assert detail["output"]["text"] == "[mock:mind-mock-1] visible audit"
 
 
+def test_provider_status_never_exposes_api_key(tmp_path, monkeypatch):
+    client = build_client(tmp_path)
+    monkeypatch.setattr(
+        "nemosine_mind.main.provider_key_is_configured",
+        lambda provider: provider == "openai",
+    )
+
+    response = client.get("/v1/providers")
+
+    assert response.status_code == 200
+    assert response.json()["providers"][1]["key_configured"] is True
+    assert "api_key" not in response.text
+    assert "sk-" not in response.text
+
+
+def test_openai_can_be_configured_without_persisting_plaintext_key(
+    tmp_path, monkeypatch
+):
+    stored = {}
+    client = build_client(tmp_path)
+    monkeypatch.setenv("MIND_DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(
+        "nemosine_mind.main.store_api_key",
+        lambda provider, secret: stored.update({provider: secret}),
+    )
+    monkeypatch.setattr(
+        "nemosine_mind.main.provider_key_is_configured",
+        lambda provider: provider in stored,
+    )
+    monkeypatch.setattr(
+        "nemosine_mind.providers.factory.resolve_api_key",
+        lambda provider: stored.get(provider, ""),
+    )
+    monkeypatch.setattr(
+        "nemosine_mind.runtime.create_provider",
+        lambda config: MockProvider(model=config.model),
+    )
+
+    response = client.put(
+        "/v1/providers/active",
+        json={
+            "provider": "openai",
+            "model": "gpt-5.4-mini",
+            "api_key": "test-secret-not-a-real-key",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "ok": True,
+        "provider": "openai",
+        "model": "gpt-5.4-mini",
+        "key_configured": True,
+    }
+    settings_text = (tmp_path / "settings.json").read_text(encoding="utf-8")
+    assert "test-secret" not in settings_text
+    assert "api_key" not in settings_text
+    assert client.get("/v1/config").json()["provider"] == "openai"
+
+
 def test_no_argument_cli_opens_ui_by_default(monkeypatch):
     calls = []
 

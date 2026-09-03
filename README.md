@@ -32,6 +32,18 @@ MiND does not implement fine-tuning, RLHF, model alignment techniques, or intern
 
 MiND can be installed directly via pip from the public repository: python -m pip install git+https://github.com/edersouzamelo/nemosine-10-MiND.git. After installation, run python -m nemosine_mind to start the deterministic middleware server. By default, the API will be available at http://127.0.0.1:8000/docs, providing an interactive Swagger UI for testing. No API key is required for minimal execution validation. To perform a quick functional test, use the /chat endpoint in the Swagger interface with a JSON body such as { "text": "hello" }. The server will return a structured JSON response including a deterministic reply and a cycle_id, confirming successful installation and execution.
 
+### Provider credentials
+
+The Windows application configures providers from the **Seletor de LLM** panel.
+OpenAI and Anthropic keys are stored in Windows Credential Manager for the current
+user. They are never written to Cycle Artifacts, reports, application settings, or
+the Git repository.
+
+For development and headless usage, MiND also accepts `OPENAI_API_KEY` and
+`ANTHROPIC_API_KEY` from the process environment. Copy `.env.example` to a local
+`.env.local` only if your launcher loads that file. All `.env.*` files are ignored
+by Git except sanitized examples.
+
 ---
 
 ## Design Principles
