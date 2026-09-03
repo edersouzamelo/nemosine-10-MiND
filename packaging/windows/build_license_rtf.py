@@ -50,7 +50,10 @@ def main() -> None:
         "}"
     )
     OUTPUT_LICENSE.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_LICENSE.write_text(document, encoding="ascii", newline="\n")
+    # Path.write_text only gained the newline parameter in Python 3.10.
+    # Keep the installer generator compatible with MiND's Python 3.9 floor.
+    with OUTPUT_LICENSE.open("w", encoding="ascii", newline="\n") as output_file:
+        output_file.write(document)
 
 
 if __name__ == "__main__":
