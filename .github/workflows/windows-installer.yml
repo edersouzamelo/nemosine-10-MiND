@@ -81,6 +81,13 @@ jobs:
       - name: Build self-contained application directory
         run: pyinstaller --noconfirm --clean packaging/windows/mind-windows.spec
 
+      - name: Stage legal files at distribution root
+        shell: pwsh
+        run: |
+          Copy-Item ".\LICENSE", ".\NOTICE", ".\TRADEMARKS.md", ".\INSTALLER_LEGAL.txt" -Destination ".\dist\MiND"
+          Copy-Item ".\build-legal\THIRD_PARTY_NOTICES.txt" -Destination ".\dist\MiND"
+          Copy-Item ".\build-legal\THIRD_PARTY_LICENSES" -Destination ".\dist\MiND\THIRD_PARTY_LICENSES" -Recurse
+
       - name: Verify packaged application
         shell: pwsh
         env:
