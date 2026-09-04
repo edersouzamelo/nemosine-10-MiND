@@ -218,7 +218,7 @@ Independent Researcher — Brazil
 
 ## Status
 
-- Version 1.0.5 release candidate
+- Stable version 1.0.5
 - Deterministic, non-agentic middleware control path
 - Auditable through versioned Cycle Artifacts
 - Local Windows interface plus Python and HTTP integration surfaces

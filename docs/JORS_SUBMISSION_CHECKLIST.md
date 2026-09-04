@@ -16,8 +16,8 @@ from author-controlled publication and journal actions.
 - [x] Secret protection and Windows credential storage tested.
 - [x] Apache 2.0 legal pack and third-party notices included.
 - [x] Validation and security records published in the repository.
-- [ ] Merge the validated candidate into `main` after CI approval.
-- [ ] Create the final stable tag after the merge.
+- [x] Merge the validated candidate into `main` after CI approval.
+- [x] Create the final stable tag after the merge.
 
 ## S9, software metapaper
 
@@ -31,7 +31,7 @@ from author-controlled publication and journal actions.
 - [x] References replaced with sources relevant to provenance, reporting,
   reproducibility and software citation.
 - [x] Author contributions and competing interests added.
-- [ ] Replace the long-term archive placeholder with the final version-specific
+- [x] Replace the long-term archive placeholder with the final version-specific
   Zenodo DOI.
 - [ ] Author reviews wording, authorship metadata, affiliation and references.
 
@@ -42,8 +42,8 @@ from author-controlled publication and journal actions.
 - [x] Citation metadata prepared in `CITATION.cff`.
 - [x] Apache 2.0 license, notice, trademark policy and dependency notices present.
 - [x] Stable release workflow prevents preview tags from publishing to PyPI.
-- [ ] Confirm that the stable version is visible on PyPI.
-- [ ] Archive the exact stable release on Zenodo and record its DOI.
+- [x] Confirm that the stable version is visible on PyPI.
+- [x] Archive the exact stable release on Zenodo and record its DOI.
 - [ ] Render and visually inspect the journal submission document.
 - [ ] Confirm author email, affiliation and optional ORCID.
 - [ ] Submit through the JORS portal with the author's explicit approval.

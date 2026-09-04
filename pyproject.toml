@@ -87,7 +87,7 @@ dev = [
 Homepage = "https://github.com/edersouzamelo/nemosine-10-MiND"
 Repository = "https://github.com/edersouzamelo/nemosine-10-MiND"
 Documentation = "https://github.com/edersouzamelo/nemosine-10-MiND"
-Archive = "https://doi.org/10.5281/zenodo.18637799"
+Archive = "https://doi.org/10.5281/zenodo.22291450"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

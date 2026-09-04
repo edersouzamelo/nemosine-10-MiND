@@ -255,7 +255,7 @@ written to Cycle Artifacts, exports, backups, or repository files.
 ## Quality control
 
 MiND uses automated tests and public continuous integration as the principal
-validation mechanism. At the 1.0.5 release candidate, the suite contains tests
+validation mechanism. In the 1.0.5 release, the suite contains tests
 for core orchestration, provider contracts, safe failures, Cycle Artifact
 validation, JSON Lines recovery, SQLite behavior, migration, Python API, CLI,
 HTTP endpoints, UI assets, settings, credential handling, legal files, and
@@ -340,17 +340,18 @@ observable. These features are not included in the present release.
   Optional dependency groups are declared in `pyproject.toml`.
 - **Source code repository:**
   <https://github.com/edersouzamelo/nemosine-10-MiND>
-- **Version reviewed in this paper:** 1.0.5 release candidate, commit
-  `968eee6ef68efbe47529c01ed383dbfa94a36369` plus the S8 and S9 documentation
-  revision.
+- **Version reviewed in this paper:** 1.0.5, commit
+  `c96c43473e4fa51d8b3576825cd60aa8fa4430ed`.
 - **Windows preview archive:**
   <https://github.com/edersouzamelo/nemosine-10-MiND/releases/tag/v1.0.5-windows-preview.1>
-- **Long-term archive:** A version-specific Zenodo DOI for the final 1.0.5
-  release must replace this sentence before submission. The earlier project
-  archive is <https://doi.org/10.5281/zenodo.18637799> and does not by itself
-  certify the present revision.
+- **Long-term archive:** <https://doi.org/10.5281/zenodo.22291450>.
 - **License:** Apache License 2.0. The MiND name and logo are governed separately
   by `TRADEMARKS.md`.
+
+The Zenodo record was created from the stable GitHub tag and preserves the
+corresponding source archive independently of the moving `main` branch. The DOI
+therefore identifies the exact software release evaluated here, while the
+repository remains the location for maintenance, issues, and later development.
 
 ## Research software metadata
 

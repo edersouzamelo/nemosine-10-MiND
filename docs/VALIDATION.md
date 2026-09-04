@@ -53,10 +53,14 @@ wheel in a fresh virtual environment.
 
 ## Release evidence
 
-- Source revision: `968eee6ef68efbe47529c01ed383dbfa94a36369`
-- CI run: <https://github.com/edersouzamelo/nemosine-10-MiND/actions/runs/33804352936>
+- Stable source revision: `c96c43473e4fa51d8b3576825cd60aa8fa4430ed`
+- Stable `main` CI run: <https://github.com/edersouzamelo/nemosine-10-MiND/actions/runs/33830901723>
+- PyPI publication run: <https://github.com/edersouzamelo/nemosine-10-MiND/actions/runs/33832222783>
 - Windows run: <https://github.com/edersouzamelo/nemosine-10-MiND/actions/runs/33804353029>
 - Windows preview release: <https://github.com/edersouzamelo/nemosine-10-MiND/releases/tag/v1.0.5-windows-preview.1>
+- Stable release: <https://github.com/edersouzamelo/nemosine-10-MiND/releases/tag/v1.0.5>
+- PyPI: <https://pypi.org/project/nemosine-mind/1.0.5/>
+- Version-specific archive: <https://doi.org/10.5281/zenodo.22291450>
 - MSI SHA-256: `8fd06c1999bc4e955bc75221c3ae589b579805d8d110fa505c8fa22ed17c7700`
 
 ## Explicit limits

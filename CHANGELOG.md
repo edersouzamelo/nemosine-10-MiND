@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.5, 2026-09-03
+## 1.0.5, 2026-09-04
 
 - Added a native Windows MSI with local controller and visual interface.
 - Added an agnostic Plug and Play tutorial for Python and HTTP integrations.

@@ -30,3 +30,14 @@ def test_preview_tags_cannot_publish_to_pypi():
     workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
     assert workflow.count("!contains(github.ref_name, '-')") == 2
+
+
+def test_final_archive_doi_is_consistent():
+    expected = "10.5281/zenodo.22291450"
+    citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
+    metadata = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    paper = (ROOT / "paper.md").read_text(encoding="utf-8")
+
+    assert expected in citation
+    assert expected in metadata
+    assert expected in paper

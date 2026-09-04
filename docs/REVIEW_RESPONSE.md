@@ -12,8 +12,9 @@ distribution channel.
 **Current response:** MiND has a base Python package with optional extras, a
 tested wheel and source distribution, a public release workflow for PyPI, and a
 self-contained Windows MSI. Clean-wheel and Windows installation tests run in
-public GitHub Actions. The final stable tag and PyPI visibility will be confirmed
-before submission.
+public GitHub Actions. Version 1.0.5 is published as the latest GitHub release,
+is available from PyPI, and is preserved at DOI
+`10.5281/zenodo.22291450`.
 
 ## 2. Implementation depth
 

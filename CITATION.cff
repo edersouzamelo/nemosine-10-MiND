@@ -6,7 +6,8 @@ authors:
   - family-names: "de Souza Melo"
     given-names: "Edervaldo José"
 version: 1.0.5
-date-released: 2026-09-03
+date-released: 2026-09-04
+doi: 10.5281/zenodo.22291450
 repository-code: "https://github.com/edersouzamelo/nemosine-10-MiND"
 url: "https://github.com/edersouzamelo/nemosine-10-MiND"
 license: Apache-2.0
