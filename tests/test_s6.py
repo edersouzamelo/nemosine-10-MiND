@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from nemosine_mind import MindConfig, cli
+from nemosine_mind import MindConfig, __version__, cli
 from nemosine_mind.core.registry import JsonlRegistry
 from nemosine_mind.main import create_app
 from nemosine_mind.providers.mock import MockProvider
@@ -36,8 +36,15 @@ def test_local_ui_and_assets_are_served_from_package(tmp_path):
     assert "Exportar dados" in page.text
     assert "Limpar dados" in page.text
     assert "Fazer backup" in page.text
+    assert page.text.count('class="nav-item') == 8
+    assert f'<meta name="mind-ui-version" content="{__version__}"' in page.text
+    assert f"/ui/assets/styles.css?v={__version__}" in page.text
+    assert f"/ui/assets/app.js?v={__version__}" in page.text
+    expected_cache = "no-store, no-cache, must-revalidate, max-age=0"
+    assert page.headers["cache-control"] == expected_cache
+    assert alias.headers["cache-control"] == expected_cache
     assert stylesheet.status_code == 200
-    assert stylesheet.headers["cache-control"] == "no-store, max-age=0"
+    assert stylesheet.headers["cache-control"] == expected_cache
     assert "--accent: #00a88f" in stylesheet.text
     assert script.status_code == 200
     assert 'request("/v1/interactions"' in script.text
@@ -46,8 +53,22 @@ def test_local_ui_and_assets_are_served_from_package(tmp_path):
     assert 'panelName === "cleanup"' in script.text
     assert 'panelName === "backup"' in script.text
     assert logo.status_code == 200
-    assert logo.headers["cache-control"] == "no-store, max-age=0"
+    assert logo.headers["cache-control"] == expected_cache
     assert 'aria-label="MiND"' in logo.text
+    for response in (page, alias, stylesheet, script, logo):
+        assert response.headers["pragma"] == "no-cache"
+        assert response.headers["expires"] == "0"
+        assert response.headers["x-mind-version"] == __version__
+
+
+def test_health_identifies_ui_revision(tmp_path):
+    response = build_client(tmp_path).get("/v1/health")
+
+    assert response.json() == {
+        "ok": True,
+        "version": __version__,
+        "ui_revision": "control-center-8",
+    }
 
 
 def test_visual_flow_uses_real_cycle_api(tmp_path):
