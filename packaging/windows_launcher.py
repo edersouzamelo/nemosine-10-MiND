@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 import urllib.request
+import uuid
 import webbrowser
 from pathlib import Path
 from typing import Optional
@@ -116,11 +117,12 @@ def smoke_test() -> int:
             return 1
         with urllib.request.urlopen(local.url, timeout=2.0) as response:
             page = response.read().decode("utf-8")
+            page_version = response.headers.get("X-MiND-Version")
         with urllib.request.urlopen(
             f"{local.url}/ui/assets/app.js", timeout=2.0
         ) as response:
             script = response.read().decode("utf-8")
-        required_markers = (
+        required_page_markers = (
             "Central de interação auditável",
             "mind-logo.svg",
             "Seletor de LLM",
@@ -129,15 +131,30 @@ def smoke_test() -> int:
             "Exportar dados",
             "Limpar dados",
             "Fazer backup",
+        )
+        required_script_markers = (
             "Cofre de Credenciais",
             "PROTOCOLO AGNÓSTICO",
         )
-        bundled_interface = page + script
-        missing = [
-            marker for marker in required_markers if marker not in bundled_interface
+        missing_page = [
+            marker for marker in required_page_markers if marker not in page
         ]
-        if missing:
-            write_smoke_report(f"missing UI markers: {missing}")
+        missing_script = [
+            marker for marker in required_script_markers if marker not in script
+        ]
+        if missing_page or missing_script:
+            write_smoke_report(
+                f"missing HTML markers: {missing_page}; "
+                f"missing script markers: {missing_script}"
+            )
+            return 1
+        from nemosine_mind import __version__
+
+        if page.count('class="nav-item') != 8:
+            write_smoke_report("installed HTML does not contain eight navigation items")
+            return 1
+        if f'content="{__version__}"' not in page or page_version != __version__:
+            write_smoke_report("installed HTML/backend version fingerprint mismatch")
             return 1
         with urllib.request.urlopen(
             f"{local.url}/ui/assets/mind-logo.svg", timeout=2.0
@@ -146,8 +163,6 @@ def smoke_test() -> int:
         if 'aria-label="MiND"' not in logo:
             write_smoke_report("new MiND logo was not found")
             return 1
-        from nemosine_mind import __version__
-
         write_smoke_report(f"ok: MiND {__version__} secure provider configuration")
         return 0
     finally:
@@ -193,7 +208,10 @@ def desktop_main() -> int:
     started_at = time.monotonic()
 
     def open_interface() -> None:
-        webbrowser.open(local.url)
+        # A unique URL forces browsers to load this process's current UI shell
+        # instead of restoring an older page from a previous browser profile.
+        launch_url = f"{local.url}/?launch={uuid.uuid4().hex}"
+        webbrowser.open(launch_url, new=2)
 
     def close_application() -> None:
         close_button.configure(state="disabled")
@@ -204,7 +222,12 @@ def desktop_main() -> int:
     def check_startup() -> None:
         nonlocal opened
         if wait_until_ready(local.url, timeout=0.2):
-            status_text.set("MiND está ativo somente neste computador.")
+            port_note = (
+                ""
+                if local.port == PREFERRED_PORT
+                else f" A porta {PREFERRED_PORT} já estava ocupada; usando {local.port}."
+            )
+            status_text.set(f"MiND está ativo somente neste computador.{port_note}")
             open_button.configure(state="normal", command=open_interface)
             if not opened:
                 opened = True
