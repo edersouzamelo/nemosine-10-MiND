@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -35,6 +36,7 @@ jobs:
           path: dist/
 
   publish:
+    if: ${{ !contains(github.ref_name, '-') }}
     needs: build
     runs-on: ubuntu-latest
     environment: release

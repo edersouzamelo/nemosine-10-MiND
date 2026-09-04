@@ -55,6 +55,15 @@ The offline mock requires no API key. It returns a predictable test response and
 a `cycle_id`. OpenAI and Anthropic require their optional SDKs and a provider
 credential.
 
+### Documentation
+
+- [Architecture and integration contract](docs/ARCHITECTURE.md)
+- [Validation record and claim boundaries](docs/VALIDATION.md)
+- [Security and privacy policy](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
+- [JORS submission readiness](docs/JORS_SUBMISSION_CHECKLIST.md)
+
 ### Provider credentials
 
 The Windows application configures providers from the **Seletor de LLM** panel.
@@ -74,7 +83,9 @@ by Git except sanitized examples.
 MiND is built around the following core principles:
 
 - **Determinism**  
-  The middleware itself is non-agentic and deterministic. It does not perform autonomous planning or decision-making.
+  The middleware control path and offline mock are deterministic. A commercial
+  provider can still produce stochastic output, so MiND records the procedure
+  and result without promising bit-for-bit semantic reproduction.
 
 - **Externalized State**  
   Requests, provider results, and audit records are handled explicitly outside
@@ -138,7 +149,10 @@ MiND is designed as middleware infrastructure and deliberately avoids several co
 - It does **not** replace model fine-tuning, RLHF, or training-based alignment methods.
 - It is **not** an autonomous agent framework.
 
-Its contribution lies in providing a controlled, inspectable, and reproducible interaction layer around existing LLMs.
+Its contribution lies in providing a controlled and inspectable interaction
+layer around existing LLMs. Reproducibility refers to the documented request
+procedure and retained execution conditions, not guaranteed reproduction of a
+provider's generated text.
 
 ---
 
@@ -204,7 +218,8 @@ Independent Researcher — Brazil
 
 ## Status
 
-- Executable minimal architecture
-- Deterministic and non-agentic
-- Auditable via structured logs
-- Designed as architectural infrastructure, not a final product
+- Version 1.0.5 release candidate
+- Deterministic, non-agentic middleware control path
+- Auditable through versioned Cycle Artifacts
+- Local Windows interface plus Python and HTTP integration surfaces
+- Semantic intent routing remains future work
