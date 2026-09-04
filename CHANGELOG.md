@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.6, 2026-09-04
+
+- Prevent browser-profile restoration and stale local caches from combining an
+  older two-item interface shell with the current MiND backend.
+- Add versioned UI asset URLs and explicit frontend/backend fingerprints.
+- Open every desktop and CLI UI session through a unique launch URL.
+- Make the packaged Windows smoke test require all eight navigation items in
+  the installed HTML itself.
+- Report when the desktop application had to use another port because 8000 was
+  already occupied by a stale or unrelated local process.
+
 ## 1.0.5, 2026-09-04
 
 - Added a native Windows MSI with local controller and visual interface.

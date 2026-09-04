@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -78,7 +78,12 @@ def create_app(
         if request.url.path in {"/", "/ui"} or request.url.path.startswith(
             "/ui/assets/"
         ):
-            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers["Cache-Control"] = (
+                "no-store, no-cache, must-revalidate, max-age=0"
+            )
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            response.headers["X-MiND-Version"] = __version__
         return response
 
     application.mount(
@@ -90,12 +95,20 @@ def create_app(
     @application.get("/", include_in_schema=False)
     @application.get("/ui", include_in_schema=False)
     def local_ui():
-        return FileResponse(str(ui_directory / "index.html"))
+        # Render the application version into the shell so every installed
+        # release receives versioned asset URLs.  This prevents a browser
+        # profile from combining an older HTML shell with a newer backend.
+        page = (ui_directory / "index.html").read_text(encoding="utf-8")
+        return HTMLResponse(page.replace("__MIND_VERSION__", __version__))
 
     @application.get("/health", include_in_schema=False)
     @application.get("/v1/health")
     def health():
-        return {"ok": True, "version": application.version}
+        return {
+            "ok": True,
+            "version": application.version,
+            "ui_revision": "control-center-8",
+        }
 
     @application.get("/ame/config", include_in_schema=False)
     @application.get("/v1/config")

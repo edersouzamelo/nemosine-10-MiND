@@ -10,6 +10,7 @@ from dataclasses import replace
 from pathlib import Path
 from threading import Timer
 from typing import Any, Dict, Optional, Sequence
+from uuid import uuid4
 
 from . import __version__
 from .api import Mind
@@ -204,7 +205,7 @@ def _serve(args: argparse.Namespace, *, open_browser: bool = False) -> int:
         )
         return 1
     if open_browser and not args.no_browser:
-        url = f"http://{args.host}:{args.port}/"
+        url = f"http://{args.host}:{args.port}/?launch={uuid4().hex}"
         opener = Timer(0.8, webbrowser.open, args=(url,))
         opener.daemon = True
         opener.start()
