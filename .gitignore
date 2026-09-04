@@ -11,6 +11,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+dist-legal/
 downloads/
 eggs/
 .eggs/
@@ -75,6 +76,10 @@ docs/_build/
 .pybuilder/
 target/
 
+# Local generated installer/legal artifacts
+build-legal/
+build-msi/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -136,8 +141,12 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
+!.env.*.example
 .envrc
 .venv
+.venv-*
 env/
 venv/
 ENV/
@@ -207,4 +216,12 @@ marimo/_lsp/
 __marimo__/
 .venv_mind_test/
 .venv_test/
+.venv-ui/
 
+# MiND runtime data
+cycles.jsonl
+src/nemosine_mind/runtime/
+
+# Local MiND credentials and settings
+secrets.json
+settings.json

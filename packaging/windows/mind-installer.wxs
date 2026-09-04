@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Product
+    Id="*"
+    Name="MiND"
+    Language="1046"
+    Version="$(var.MindVersion)"
+    Manufacturer="Edervaldo José de Souza Melo"
+    UpgradeCode="76F8D8E1-73E3-4D87-95B4-09E39ECA0D48">
+    <Package
+      InstallerVersion="500"
+      Compressed="yes"
+      InstallScope="perMachine"
+      InstallPrivileges="elevated"
+      Description="MiND, central local de interações auditáveis" />
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="Já existe uma versão mais recente do MiND instalada." />
+    <util:CloseApplication
+      Id="CloseRunningMiND"
+      Target="MiND.exe"
+      CloseMessage="yes"
+      ElevatedCloseMessage="yes"
+      RebootPrompt="no"
+      Timeout="5"
+      TerminateProcess="0" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Property Id="ARPPRODUCTICON" Value="MindIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/edersouzamelo/nemosine-10-MiND" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/edersouzamelo/nemosine-10-MiND/issues" />
+    <Icon Id="MindIcon" SourceFile="packaging\windows\mind.ico" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="MiND" />
+      </Directory>
+      <Directory Id="CommonProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="MiND" />
+      </Directory>
+      <Directory Id="CommonDesktopFolder" />
+    </Directory>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="StartMenuShortcut" Guid="A6DE7330-E89B-47D5-947D-DF0107C79A54" Win64="yes">
+        <Shortcut
+          Id="StartMenuMiND"
+          Name="MiND"
+          Description="Abrir a interface local do MiND"
+          Target="[INSTALLFOLDER]MiND.exe"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="MindIcon" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\MiND"
+          Name="StartMenuShortcut"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="CommonDesktopFolder">
+      <Component Id="DesktopShortcut" Guid="C27C538B-AE07-4F80-BE1B-801E00F22CE4" Win64="yes">
+        <Shortcut
+          Id="DesktopMiND"
+          Name="MiND"
+          Description="Abrir a interface local do MiND"
+          Target="[INSTALLFOLDER]MiND.exe"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="MindIcon" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\MiND"
+          Name="DesktopShortcut"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Complete" Title="MiND" Level="1">
+      <ComponentGroupRef Id="MindFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="build-msi\LICENSE.rtf" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Abrir o MiND agora" />
+    <Property Id="WixShellExecTarget" Value="[INSTALLFOLDER]MiND.exe" />
+    <CustomAction
+      Id="LaunchMiND"
+      BinaryKey="WixCA"
+      DllEntry="WixShellExec"
+      Impersonate="yes"
+      Return="check" />
+    <UI>
+      <UIRef Id="WixUI_InstallDir" />
+      <Publish
+        Dialog="ExitDialog"
+        Control="Finish"
+        Event="DoAction"
+        Value="LaunchMiND">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed</Publish>
+    </UI>
+  </Product>
+</Wix>

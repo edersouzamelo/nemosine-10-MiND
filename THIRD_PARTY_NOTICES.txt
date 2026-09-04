@@ -1,0 +1,19 @@
+MiND, THIRD-PARTY NOTICES
+
+MiND source and binary distributions may include third-party components. Each
+component remains governed by its own license and attribution requirements.
+
+The Windows release workflow generates the release-specific dependency and
+license inventory from the environment used to build the installer. That
+generated inventory is packaged with the application as
+THIRD_PARTY_NOTICES.txt and must be reviewed before a public release.
+
+The principal runtime components currently declared by MiND are FastAPI,
+Uvicorn, Pydantic, OpenAI Python, and Anthropic Python, together with their
+transitive dependencies. The Windows executable also contains a CPython runtime
+and a PyInstaller bootloader. Their licenses are not replaced by the MiND
+Apache-2.0 license.
+
+Do not remove or replace third-party copyright or license notices. Before each
+public release, review the generated inventory and the actual bundled files for
+license compatibility and required notices.

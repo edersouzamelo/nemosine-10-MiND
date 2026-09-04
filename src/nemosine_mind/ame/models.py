@@ -1,29 +1,14 @@
-from __future__ import annotations
+"""Legacy AME model names mapped to the neutral MiND core."""
 
-from dataclasses import dataclass
-from typing import Any, Dict, List
+from nemosine_mind.core.models import (
+    CycleRecord,
+    MindInput,
+    MindOutput,
+    RunResult,
+)
 
+AMEInput = MindInput
+AMEOutput = MindOutput
+AMECycleRecord = CycleRecord
 
-@dataclass(frozen=True)
-class AMEInput:
-    text: str
-
-
-@dataclass(frozen=True)
-class AMEOutput:
-    text: str
-
-
-@dataclass(frozen=True)
-class AMECycleRecord:
-    cycle_id: str
-    input: Dict[str, Any]
-    config: Dict[str, Any]
-    output: Dict[str, Any]
-    meta: Dict[str, Any]
-
-
-@dataclass(frozen=True)
-class RunResult:
-    cycle_id: str
-    reply: str
+__all__ = ["AMECycleRecord", "AMEInput", "AMEOutput", "RunResult"]

@@ -1,0 +1,270 @@
+name: Windows installer
+
+# Public previews are released only by an explicitly authorized commit marker.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "agent/**"
+    paths:
+      - ".github/workflows/windows-installer.yml"
+      - "packaging/**"
+      - "src/**"
+      - "pyproject.toml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-installer:
+    name: Build and verify Windows installer
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install application and packaging tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[ui,providers]" "pyinstaller>=6.10,<7"
+
+      - name: Build release-specific legal inventory
+        run: >-
+          python packaging/windows/build_third_party_notices.py
+          --output build-legal/THIRD_PARTY_NOTICES.txt
+          --licenses-dir build-legal/THIRD_PARTY_LICENSES
+
+      - name: Verify desktop launcher before packaging
+        run: python packaging/windows_launcher.py --smoke-test
+
+      - name: Verify Windows credential protection
+        shell: pwsh
+        run: |
+          @'
+          from nemosine_mind.settings import (
+              delete_stored_api_key,
+              read_stored_api_key,
+              store_api_key,
+          )
+
+          value = "mind-ci-credential-roundtrip"
+          store_api_key("openai", value)
+          assert read_stored_api_key("openai") == value
+          delete_stored_api_key("openai")
+          assert read_stored_api_key("openai") is None
+          '@ | python -
+
+      - name: Build console diagnostics application
+        run: >-
+          pyinstaller --noconfirm --clean
+          --distpath dist-diagnostics
+          --workpath build-diagnostics
+          packaging/windows/mind-smoke.spec
+
+      - name: Verify frozen application with diagnostics
+        shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-diagnostics-smoke.txt
+        run: |
+          & ".\dist-diagnostics\MiND-Diagnostics\MiND-Diagnostics.exe" --smoke-test
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build self-contained application directory
+        run: pyinstaller --noconfirm --clean packaging/windows/mind-windows.spec
+
+      - name: Stage legal files at distribution root
+        shell: pwsh
+        run: |
+          Copy-Item ".\LICENSE", ".\NOTICE", ".\TRADEMARKS.md", ".\INSTALLER_LEGAL.txt" -Destination ".\dist\MiND"
+          Copy-Item ".\build-legal\THIRD_PARTY_NOTICES.txt" -Destination ".\dist\MiND"
+          Copy-Item ".\build-legal\THIRD_PARTY_LICENSES" -Destination ".\dist\MiND\THIRD_PARTY_LICENSES" -Recurse
+
+      - name: Verify packaged application
+        shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-packaged-smoke.txt
+        run: |
+          $process = Start-Process -FilePath ".\dist\MiND\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
+          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
+
+      - name: Install WiX Toolset
+        id: wix
+        shell: pwsh
+        run: |
+          $candle = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin\candle.exe"
+          $light = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin\light.exe"
+          $heat = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin\heat.exe"
+          if (-not (Test-Path $candle)) {
+            choco install wixtoolset --no-progress -y
+          }
+          if (-not (Test-Path $candle) -or -not (Test-Path $light) -or -not (Test-Path $heat)) {
+            throw "WiX Toolset was not found"
+          }
+          "candle=$candle" >> $env:GITHUB_OUTPUT
+          "light=$light" >> $env:GITHUB_OUTPUT
+          "heat=$heat" >> $env:GITHUB_OUTPUT
+
+      - name: Build native Windows Installer package
+        shell: pwsh
+        run: |
+          $version = python -c "from nemosine_mind import __version__; print(__version__)"
+          New-Item -ItemType Directory -Force -Path ".\build-msi", ".\dist-installer" | Out-Null
+          python ".\packaging\windows\build_license_rtf.py"
+          $licenseText = Get-Content ".\build-msi\LICENSE.rtf" -Raw
+          if ($licenseText -notmatch "Apache License" -or $licenseText -notmatch "Version 2.0, January 2004") {
+            throw "Generated installer legal text is not Apache-2.0"
+          }
+          if ($licenseText -match "Lorem ipsum") {
+            throw "Placeholder license text must never enter the installer"
+          }
+          @("LICENSE", "NOTICE", "TRADEMARKS.md", "INSTALLER_LEGAL.txt", "THIRD_PARTY_NOTICES.txt", "THIRD_PARTY_LICENSES") | ForEach-Object {
+            if (-not (Test-Path ".\dist\MiND\$_")) { throw "Missing legal distribution item: $_" }
+          }
+          & "${{ steps.wix.outputs.heat }}" dir ".\dist\MiND" `
+            -cg MindFiles -dr INSTALLFOLDER -gg -scom -sreg -sfrag -srd `
+            -var var.MindSource -out ".\build-msi\mind-files.wxs"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "${{ steps.wix.outputs.candle }}" `
+            -arch x64 `
+            "-dMindVersion=$version" `
+            "-dMindSource=$pwd\dist\MiND" `
+            -ext WixUIExtension -ext WixUtilExtension `
+            -out ".\build-msi\" `
+            ".\packaging\windows\mind-installer.wxs" `
+            ".\build-msi\mind-files.wxs"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "${{ steps.wix.outputs.light }}" `
+            -ext WixUIExtension -ext WixUtilExtension `
+            -cultures:pt-BR `
+            -out ".\dist-installer\MiND-$version-windows-x64.msi" `
+            ".\build-msi\mind-installer.wixobj" `
+            ".\build-msi\mind-files.wixobj"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify upgrade from installed Preview 4
+        shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-upgrade-smoke.txt
+        run: |
+          $previous = Join-Path $env:RUNNER_TEMP "MiND-1.0.2-preview4.msi"
+          Invoke-WebRequest "https://github.com/edersouzamelo/nemosine-10-MiND/releases/download/v1.0.2-windows-preview.4/MiND-1.0.2-windows-x64.msi" -OutFile $previous
+          $installDir = Join-Path $env:RUNNER_TEMP "mind-upgrade-installed"
+          $oldLog = Join-Path $env:RUNNER_TEMP "mind-msi-old.log"
+          $old = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/i", "`"$previous`"", "/qn", "/norestart", "INSTALLFOLDER=`"$installDir`"", "/l*v", "`"$oldLog`"" `
+            -Wait -PassThru
+          if ($old.ExitCode -ne 0) {
+            Get-Content $oldLog
+            exit $old.ExitCode
+          }
+          $setup = Get-ChildItem ".\dist-installer\MiND-*-windows-x64.msi" | Select-Object -First 1
+          $upgradeLog = Join-Path $env:RUNNER_TEMP "mind-msi-upgrade.log"
+          $upgrade = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/i", "`"$($setup.FullName)`"", "/qn", "/norestart", "INSTALLFOLDER=`"$installDir`"", "/l*v", "`"$upgradeLog`"" `
+            -Wait -PassThru
+          if ($upgrade.ExitCode -ne 0) {
+            Get-Content $upgradeLog
+            exit $upgrade.ExitCode
+          }
+          $smoke = Start-Process -FilePath "$installDir\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
+          if ($smoke.ExitCode -ne 0) { exit $smoke.ExitCode }
+          $remove = Start-Process -FilePath "msiexec.exe" -ArgumentList "/x", "`"$($setup.FullName)`"", "/qn", "/norestart" -Wait -PassThru
+          if ($remove.ExitCode -ne 0) { exit $remove.ExitCode }
+          if (Test-Path "$installDir\MiND.exe") { throw "Upgrade uninstall left MiND.exe behind" }
+
+      - name: Verify clean MSI install, launch and uninstall
+        shell: pwsh
+        env:
+          MIND_SMOKE_REPORT: ${{ runner.temp }}\mind-installed-smoke.txt
+        run: |
+          $setup = Get-ChildItem ".\dist-installer\MiND-*-windows-x64.msi" | Select-Object -First 1
+          if (-not $setup) { throw "MSI installer was not generated" }
+          $installDir = Join-Path $env:RUNNER_TEMP "mind-installed"
+          $installLog = Join-Path $env:RUNNER_TEMP "mind-msi-install.log"
+          $process = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/i", "`"$($setup.FullName)`"", "/qn", "/norestart", "INSTALLFOLDER=`"$installDir`"", "/l*v", "`"$installLog`"" `
+            -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            Get-Content $installLog
+            exit $process.ExitCode
+          }
+          if (-not (Test-Path "$installDir\MiND.exe")) { throw "MiND.exe was not installed" }
+          $smoke = Start-Process -FilePath "$installDir\MiND.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if (Test-Path $env:MIND_SMOKE_REPORT) { Get-Content $env:MIND_SMOKE_REPORT }
+          if ($smoke.ExitCode -ne 0) { exit $smoke.ExitCode }
+          $uninstallLog = Join-Path $env:RUNNER_TEMP "mind-msi-uninstall.log"
+          $remove = Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/x", "`"$($setup.FullName)`"", "/qn", "/norestart", "/l*v", "`"$uninstallLog`"" `
+            -Wait -PassThru
+          if ($remove.ExitCode -ne 0) {
+            Get-Content $uninstallLog
+            exit $remove.ExitCode
+          }
+          if (Test-Path "$installDir\MiND.exe") { throw "MSI uninstall left MiND.exe behind" }
+          Get-FileHash $setup.FullName -Algorithm SHA256 | ForEach-Object {
+            "$($_.Hash.ToLower())  $($setup.Name)" | Set-Content ".\dist-installer\SHA256SUMS.txt"
+          }
+
+      - name: Publish authorized Windows preview
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-installer]')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $setup = Get-ChildItem ".\dist-installer\MiND-*-windows-x64.msi" | Select-Object -First 1
+          if (-not $setup) { throw "MSI installer was not generated" }
+          $checksum = Get-Item ".\dist-installer\SHA256SUMS.txt"
+          $version = python -c "from nemosine_mind import __version__; print(__version__)"
+          $tag = "v$version-windows-preview.1"
+          $title = "MiND $version para Windows, Preview 1"
+          $notes = @"
+          Instalador MSI autocontido do MiND para Windows.
+
+          Inclui:
+          - nova identidade visual com o M integrado às arestas do cubo;
+          - central local de auditoria com oito acessos laterais;
+          - seletor funcional de LLM, modelo e chave;
+          - GPT-5.4 Mini sugerido como modelo inicial da OpenAI;
+          - chave protegida no Cofre de Credenciais do Windows;
+          - Plug and Play agnóstico com tutorial HTTP e Python;
+          - exportação filtrável dos Cycle Artifacts em JSON;
+          - backup local completo dos registros;
+          - painel de ocupação e limpeza protegida;
+          - interface local de auditoria;
+          - instalação nativa do Windows, sem Python, ZIP, BAT ou executor temporário;
+          - instalação em Arquivos de Programas mediante confirmação padrão do Windows;
+          - atalho no menu Iniciar;
+          - atalhos no menu Iniciar e na área de trabalho;
+          - controlador local para abrir e encerrar o MiND;
+          - providers OpenAI e Anthropic incluídos no aplicativo.
+
+          Esta versão substitui corretamente instalações anteriores. A chave nunca é salva nos arquivos de configuração, no histórico ou no GitHub. O instalador incorpora o aviso jurídico, o texto oficial da Apache License 2.0 e o inventário de licenças das dependências empacotadas. Ainda é uma versão de teste sem assinatura digital; Windows ou antivírus podem solicitar confirmação de publicador desconhecido.
+          "@
+          gh release create $tag $setup.FullName $checksum.FullName `
+            --prerelease `
+            --target "$env:GITHUB_SHA" `
+            --title $title `
+            --notes $notes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mind-windows-installer
+          path: |
+            dist-installer/MiND-*-windows-x64.msi
+            dist-installer/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7

@@ -1,9 +1,9 @@
-from __future__ import annotations
+"""Legacy AME configuration kept for compatibility with Nemosine clients."""
 
 import os
-from dataclasses import dataclass, asdict
-from typing import Any, Dict
+from dataclasses import dataclass
 
+from nemosine_mind.core.config import MindConfig
 
 DEFAULT_SYSTEM_TEMPLATE = (
     "Agora opero sob o Sistema Nemosine Nous.\n"
@@ -16,18 +16,9 @@ DEFAULT_SYSTEM_TEMPLATE = (
 
 
 @dataclass(frozen=True)
-class AMEConfig:
-    version: str = "0.2.0"
+class AMEConfig(MindConfig):
     mode: str = "AME"
-    model: str = "gpt-4o-mini"
-    temperature: float = 0.2
-    max_output_tokens: int = 700
     system_template: str = DEFAULT_SYSTEM_TEMPLATE
-
-    def to_public_dict(self) -> Dict[str, Any]:
-        d = asdict(self)
-        # Não expõe segredos.
-        return d
 
 
 def load_config() -> AMEConfig:

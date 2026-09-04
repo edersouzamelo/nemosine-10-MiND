@@ -1,15 +1,5 @@
-from __future__ import annotations
+"""Legacy import path for the MiND input handler."""
 
-from .models import AMEInput
+from nemosine_mind.core.input_handler import InputHandler
 
-
-class InputHandler:
-    """
-    Componente 1 (TR-004): Manipulador de Entrada
-    - Recebe texto e normaliza.
-    - Sem inferência semântica profunda.
-    """
-
-    @staticmethod
-    def parse(user_text: str) -> AMEInput:
-        return AMEInput(text=(user_text or "").strip())
+__all__ = ["InputHandler"]

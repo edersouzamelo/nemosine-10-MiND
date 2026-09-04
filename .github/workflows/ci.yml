@@ -1,0 +1,163 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "agent/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret protection
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Reject tracked API keys
+        shell: bash
+        run: |
+          if git grep -I -q -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}'; then
+            echo "Potential API key found in a tracked file."
+            exit 1
+          fi
+          git check-ignore -q .env.local
+
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip ".[test]"
+
+      - name: Run tests with coverage
+        run: python -m pytest --cov=nemosine_mind --cov-report=term-missing
+
+  minimum-dependencies:
+    name: Minimum supported dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+          cache: pip
+
+      - name: Install declared minimums
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --no-deps -e .
+          python -m pip install \
+            fastapi==0.111.0 \
+            httpx==0.27.0 \
+            pydantic==2.7.0 \
+            pytest==8.0.0 \
+            pytest-cov==5.0.0
+
+      - name: Run tests against minimums
+        run: python -m pytest --cov=nemosine_mind --cov-report=term-missing
+
+  quality:
+    name: Lint and type checking
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install development dependencies
+        run: python -m pip install --upgrade pip ".[dev]"
+
+      - name: Check code
+        run: |
+          ruff check src tests packaging
+          ruff format --check src tests packaging
+          mypy
+
+  package:
+    name: Build and clean-wheel smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check dist/*
+
+      - name: Verify bundled local interface
+        run: |
+          python - <<'PY'
+          from glob import glob
+          from zipfile import ZipFile
+
+          wheel = glob("dist/*.whl")[0]
+          required = {
+              "nemosine_mind/ui/index.html",
+              "nemosine_mind/ui/styles.css",
+              "nemosine_mind/ui/app.js",
+              "nemosine_mind/ui/mind-logo.svg",
+          }
+          with ZipFile(wheel) as archive:
+              names = set(archive.namelist())
+              missing = required.difference(names)
+              legal_names = {name.rsplit("/", 1)[-1] for name in names if "/licenses/" in name}
+              missing_legal = {"LICENSE", "NOTICE", "TRADEMARKS.md", "THIRD_PARTY_NOTICES.txt"}.difference(legal_names)
+          if missing:
+              raise SystemExit(f"Missing UI assets: {sorted(missing)}")
+          if missing_legal:
+              raise SystemExit(f"Missing legal files: {sorted(missing_legal)}")
+          PY
+
+      - name: Install base wheel without dependencies
+        run: |
+          python -m venv /tmp/mind-wheel-smoke
+          /tmp/mind-wheel-smoke/bin/python -m pip install --no-deps dist/*.whl
+
+      - name: Run offline smoke test
+        env:
+          MIND_DATA_DIR: /tmp/mind-wheel-data
+        run: |
+          /tmp/mind-wheel-smoke/bin/mind demo "CI offline demo"
+          /tmp/mind-wheel-smoke/bin/mind doctor
+          /tmp/mind-wheel-smoke/bin/mind cycles --json
+          /tmp/mind-wheel-smoke/bin/python -c "import importlib.util; assert importlib.util.find_spec('fastapi') is None; assert importlib.util.find_spec('openai') is None; assert importlib.util.find_spec('anthropic') is None"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: python-distributions
+          path: dist/
